@@ -167,37 +167,52 @@ if __name__ == '__main__':
         watermarked_completions = []
         unwatermarked_completions = []
         
-        detect_result = myWatermark.detect_watermark(code)
-        human_code_detect_results.append(detect_result['score'])
-        
-        watermarked_code = myWatermark.generate_watermarked_text(prompt)
-        detect_result = myWatermark.detect_watermark(watermarked_code)
-        watermarked_completions.append(watermarked_code)
-        watermarked_detect_results.append(detect_result['score'])
-        
-        unwatermarked_code = myWatermark.generate_unwatermarked_text(prompt)
-        detect_result = myWatermark.detect_watermark(unwatermarked_code)
-        unwatermarked_completions.append(unwatermarked_code)
-        unwatermarked_detect_results.append(detect_result['score'])
-
-        # Perplexity
-        watermarked_perplexity = calculate_perplexity(watermarked_code, tokenizer, model)
-        unwatermarked_perplexity = calculate_perplexity(unwatermarked_code, tokenizer, model)
-        average_perplexity_watermarked.append(watermarked_perplexity)
-        average_perplexity_unwatermarked.append(unwatermarked_perplexity)
+        for _ in range(args.n_samples):
+            detect_result = myWatermark.detect_watermark(code)
+            human_code_detect_results.append(detect_result['score'])
+            
+            watermarked_code = myWatermark.generate_watermarked_text(prompt)
+            detect_result = myWatermark.detect_watermark(watermarked_code)
+            watermarked_completions.append(watermarked_code)
+            watermarked_detect_results.append(detect_result['score'])
+            
+            unwatermarked_code = myWatermark.generate_unwatermarked_text(prompt)
+            detect_result = myWatermark.detect_watermark(unwatermarked_code)
+            unwatermarked_completions.append(unwatermarked_code)
+            unwatermarked_detect_results.append(detect_result['score'])
 
         if args.data == 'humanevalpack':
             watermarked_codes.append(watermarked_completions)
             unwatermarked_codes.append(unwatermarked_completions)  
+        elif args.data == 'mbppplus':
+            for completion in watermarked_completions:
+                watermarked_codes.append({"task_id": task_id, "solution": completion})
+            for completion in unwatermarked_completions:
+                unwatermarked_codes.append({"task_id": task_id, "solution": completion})
+        else:
+            for completion in watermarked_completions:
+                watermarked_codes.append({"task_id": task_id, "completion": completion})
+            for completion in unwatermarked_completions:
+                unwatermarked_codes.append({"task_id": task_id, "completion": completion})            
 
-        else:   
-            watermarked_codes.append({"task_id": task_id, "completion": watermarked_completions})
-            unwatermarked_codes.append({"task_id": task_id, "completion": unwatermarked_completions})                   
+    # Calculate average perplexity for each sample
+    average_perplexity_watermarked_samples = []
+    average_perplexity_unwatermarked_samples = []
 
-    # Calculate average perplexity
-    average_perplexity_watermarked = sum(average_perplexity_watermarked) / len(average_perplexity_watermarked)
-    average_perplexity_unwatermarked = sum(average_perplexity_unwatermarked) / len(average_perplexity_unwatermarked)     
-        
+    for i in range(args.n_samples):
+        if args.data == 'mbppplus':
+            watermarked_sample = [watermarked_codes[j]['solution'] for j in range(i, len(watermarked_codes), args.n_samples)]
+            unwatermarked_sample = [unwatermarked_codes[j]['solution'] for j in range(i, len(unwatermarked_codes), args.n_samples)]
+        elif args.data == 'humanevalpack':
+            watermarked_sample = [watermarked_codes[j][i] for j in range(len(watermarked_codes))]
+            unwatermarked_sample = [unwatermarked_codes[j][i] for j in range(len(unwatermarked_codes))]
+        else:
+            watermarked_sample = [watermarked_codes[j]['completion'] for j in range(i, len(watermarked_codes), args.n_samples)]
+            unwatermarked_sample = [unwatermarked_codes[j]['completion'] for j in range(i, len(unwatermarked_codes), args.n_samples)]
+      
+        average_perplexity_watermarked_samples.append(calculate_average_perplexity(watermarked_sample, tokenizer, model))
+        average_perplexity_unwatermarked_samples.append(calculate_average_perplexity(unwatermarked_sample, tokenizer, model))
+
     # evaluated results
     human_zscore = np.mean(human_code_detect_results)
     watermarked_zscore = np.mean(watermarked_detect_results)
@@ -229,24 +244,10 @@ if __name__ == '__main__':
     eval_results['thresholds-human-watermarked'] = thresholds_list
     
     # Perplexity results
-    eval_results['average_perplexity_watermarked'] = average_perplexity_watermarked
-    eval_results['average_perplexity_unwatermarked'] = average_perplexity_unwatermarked
-
-
-
-    watermarked_solutions = [] 
-    if args.data == "humanevalpack":
-        for task_id, codes in zip(task_ids, watermarked_codes):
-            watermarked_solutions.append(codes)
-    elif args.data == "mbppplus":
-        for watermarked_code in watermarked_codes:
-            watermarked_solutions.append({'task_id': watermarked_code['task_id'], 'solution': watermarked_code['completion']})
-    else:
-        for watermarked_code in watermarked_codes:
-            watermarked_solutions.append({'task_id': watermarked_code['task_id'], 'completion': watermarked_code['completion']})
+    eval_results['average_perplexity_watermarked'] = average_perplexity_watermarked_samples
+    eval_results['average_perplexity_unwatermarked'] = average_perplexity_unwatermarked_samples
 
     save_path = f'./results/{args.n_samples}samples/'
-
 
     os.makedirs(save_path, exist_ok=True)
     # save evaluation watermarked results 
@@ -255,30 +256,17 @@ if __name__ == '__main__':
     
     if args.data == "humanevalpack":
         with open(save_path + args.data + '_' + args.language + '_' + args.model + '_' + args.method + '_' + args.skipping_rule + '_' + str(args.watermark_on_pl) + '_' + str(args.gamma) + '_' + str(args.delta) + '_' + str(args.hash_key) + '_' + '_watermarked_solutions.json', 'w') as f:
-            json.dump(watermarked_solutions, f, indent=4)        
+            json.dump(watermarked_codes, f, indent=4)        
     else:
         with open(save_path + args.data + '_' + args.language + '_' + args.model + '_' + args.method + '_' + args.skipping_rule + '_' + str(args.watermark_on_pl) + '_' + str(args.gamma) + '_' + str(args.delta) + '_' + str(args.hash_key) + '_' + '_watermarked_solutions.jsonl', 'w') as f:
-            for item in watermarked_solutions:
+            for item in watermarked_codes:
                 f.write(json.dumps(item) + '\n')
             
-            
     # save evaluation unwatermarked results 
-    unwatermarked_solutions = [] 
-    if args.data == "humanevalpack":
-        for task_id, codes in zip(task_ids, unwatermarked_codes):
-            unwatermarked_solutions.append(codes)
-    elif args.data == "mbppplus":
-        for unwatermarked_code in unwatermarked_codes:
-            unwatermarked_solutions.append({'task_id': unwatermarked_code['task_id'], 'solution': unwatermarked_code['completion']})
-    else:
-        for unwatermarked_code in unwatermarked_codes:
-            unwatermarked_solutions.append({'task_id': unwatermarked_code['task_id'], 'completion': unwatermarked_code['completion']})
-
-    # save unwatermarked solutions
     if args.data == "humanevalpack":
         with open(save_path + args.data + '_' + args.language + '_' + args.model + '_' + args.method + '_' + str(args.hash_key) + '_' + '_unwatermarked_solutions.json', 'w') as f:
-            json.dump(unwatermarked_solutions, f, indent=4)
+            json.dump(unwatermarked_codes, f, indent=4)
     else:
         with open(save_path + args.data + '_' + args.language + '_' + args.model + '_' + args.method +'_' + str(args.hash_key) + '_' + '_unwatermarked_solutions.jsonl', 'w') as f:
-            for item in unwatermarked_solutions:
+            for item in unwatermarked_codes:
                 f.write(json.dumps(item) + '\n')
