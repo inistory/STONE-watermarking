@@ -149,7 +149,7 @@ bash pass_evaluation.sh
 1-2. Evaluate HumanEvalPack
 ```bash
 tar -cvf bigcode-evaluation-harness.tar.gz bigcode-evaluation-harness
-tar -cvf results.tar.gz results
+tar -cvf results.tar.gz ./stone_implementation/results
 ```
 Upload bigcode-evaluation-harness.tar.gz and results.tar.gz to Google Drive and run the notebook file below to calculate the correctness score.
 
