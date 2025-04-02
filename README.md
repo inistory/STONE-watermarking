@@ -131,22 +131,36 @@ HF_ACCESS_TOKEN="[INSERT YOUR API KEY]"
 ```
 
 ### Training
+1-1. Train HumanEval+, MBPP+, and HumanEvalPack
 Generating watermarked machined-generated code:
 ```bash
 cd stone_implementation
 bash run.sh
 ```
 
+1-2. Train CodeIP
+Generating watermarked machined-generated code:
+```bash
+cd CodeIP/examples/codeip_humaneval/src/watermarking/utils
+python generate_lstm_dataset.py
+python train_type_predictor.py
+
+cd CodeIP/examples/codeip_humaneval/src/
+python run_wm.py --language python --save_path ./output/result_python.json
+```
+
 ### Evaluating
 
 #### 1. Calculating correctness score
 
-1-1. Evaluate HumanEvalplus and MBPPplus
+1-1. For other baseline and STONE
+
+1-1-1. Evaluate HumanEval+ and MBPP+
 ```bash
 cd stone_implementation/custom_evalplus/evalplus
 bash pass_evaluation.sh
 ```
-1-2. Evaluate HumanEvalPack
+1-1-2. Evaluate HumanEvalPack
 ```bash
 tar -cvf bigcode-evaluation-harness.tar.gz bigcode-evaluation-harness
 tar -cvf results.tar.gz ./stone_implementation/results
@@ -155,11 +169,29 @@ Upload bigcode-evaluation-harness.tar.gz and results.tar.gz to Google Drive and 
 
 https://drive.google.com/file/d/1IymQy7fJyKFYSgZokuWVfW1yThNJxQ53/view?usp=sharing
 
+1-2. For CodeIP
+```bash
+cd CodeIP/examples/codeip_humaneval/src/output
+python convert.py
+bash pass_evaluation.sh
+```
 #### 2. Getting detectability and naturalness scores
 
+2-1. For other baseline and STONE
 ```bash
 cd stone_implementation/evaluation
 AUROC_perplexity.ipynb
+```
+2-2. For CodeIP
+```bash
+#1) Getting detectability score
+cd CodeIP/examples/codeip_humaneval/src/output
+# Check the "acc" value in the "codeip_results.json" file and calculate the success rate.
+Success Rate = (Count the number of "TRUE" values) / (Count the length of the "acc" list)
+
+#2) Getting naturalness score
+cd CodeIP/examples/codeip_humaneval/src/output
+python perplexity.py
 ```
 
 #### 3. Calculating CWEM (Code Watermarking Evaluation Metric)
@@ -170,4 +202,4 @@ cwem.py
 ```
 
 ## Acknowledgements
-This repository is based on the codes of [bigcode-evaluation-harness](https://github.com/bigcode-project/bigcode-evaluation-harness) in [BigCode Project](https://github.com/bigcode-project).
+This repository is based on the codes of [bigcode-evaluation-harness](https://github.com/bigcode-project/bigcode-evaluation-harness) in [BigCode Project](https://github.com/bigcode-project) and [MarkLLM](https://github.com/THU-BPM/MarkLLM) and [CodeIP](https://github.com/CGCL-codes/naturalcc/tree/main/examples/codeip)
