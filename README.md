@@ -202,4 +202,4 @@ cwem.py
 ```
 
 ## Acknowledgements
-This repository is based on the codes of [bigcode-evaluation-harness](https://github.com/bigcode-project/bigcode-evaluation-harness) in [BigCode Project](https://github.com/bigcode-project) and [MarkLLM](https://github.com/THU-BPM/MarkLLM) and [CodeIP](https://github.com/CGCL-codes/naturalcc/tree/main/examples/codeip)
+This repository is based on the codes of [MarkLLM](https://github.com/THU-BPM/MarkLLM), [CodeIP](https://github.com/CGCL-codes/naturalcc/tree/main/examples/codeip) and [bigcode-evaluation-harness](https://github.com/bigcode-project/bigcode-evaluation-harness)
