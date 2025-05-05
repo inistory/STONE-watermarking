@@ -1,4 +1,3 @@
-
 import json
 import os.path
 import torch
@@ -13,6 +12,7 @@ from .watermark_processors.PDA_model_processor import PDAProcessorMessageModel
 from .watermark_processors.message_models.PDA_message_model import PDAMessageModel
 from pygments.lexers import PythonLexer
 import torch.nn as nn
+from evalplus.sanitize import get_human_eval_plus
 
 ROOT_PATH = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 

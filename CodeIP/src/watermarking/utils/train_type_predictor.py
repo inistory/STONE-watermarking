@@ -9,7 +9,7 @@ SEQ_LENGTH = 30
 BATCH_SIZE = 128
 EPOCHS = 10
 LEARNING_RATE = 0.001
-MODEL_PATH = "../../../codeip_complete_final/src/lstm_model_python.pth" 
+MODEL_PATH = "lstm_model_python.pth" 
 
 class TypePredictor(nn.Module):
     def __init__(self, vocab_size, embed_size, hidden_size):
