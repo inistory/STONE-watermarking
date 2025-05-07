@@ -12,7 +12,7 @@ from .watermark_processors.PDA_model_processor import PDAProcessorMessageModel
 from .watermark_processors.message_models.PDA_message_model import PDAMessageModel
 from pygments.lexers import PythonLexer
 import torch.nn as nn
-from evalplus.sanitize import get_human_eval_plus
+from evalplus.data import get_human_eval_plus, get_mbpp_plus
 
 ROOT_PATH = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 
@@ -41,7 +41,8 @@ def main(args: WmBaseArgs):
             output = self.fc(hn[-1, :, :])
             return output
 
-    state_dict = torch.load("lstm_model_" + args.language + ".pth")
+    model_path = os.path.join(ROOT_PATH, "watermarking", "utils", f"lstm_model_{args.language}.pth")
+    state_dict = torch.load(model_path)
     vocab_size = state_dict['embedding.weight'].shape[0]
     embed_size = 64
     hidden_size = 128
@@ -50,10 +51,35 @@ def main(args: WmBaseArgs):
     lstm_model = LSTMModel(vocab_size, embed_size, hidden_size, output_size)
     lstm_model.load_state_dict(state_dict)
     lstm_model.to(args.device)
-    dataset_path = os.path.join('./data/humanevalplus.jsonl')
-    with open(dataset_path, "r") as f:
-        dataset = [json.loads(line) for line in f.readlines()]
-    dataset = dataset[:args.sample_num]
+    
+    # Load dataset based on dataset type
+    if args.dataset_type == "humaneval":
+        dataset_dict = get_human_eval_plus()
+    elif args.dataset_type == "mbpp":
+        dataset_dict = get_mbpp_plus()
+    elif args.dataset_type == "humanevalpack":
+        dataset = []
+        # Construct path based on language
+        if args.language not in ["cpp", "java"]:
+            raise ValueError(f"Unsupported language for humanevalpack: {args.language}. Supported languages are: cpp, java")
+            
+        output_file = os.path.join(ROOT_PATH, 'custom_evalplus', 'humanevalpack', 'data', args.language, 'data', 'humanevalpack.jsonl')
+        if not os.path.exists(output_file):
+            raise FileNotFoundError(f"Dataset file not found: {output_file}")
+            
+        with open(output_file, 'r') as f:
+            for line in f:
+                problem = json.loads(line)
+                dataset.append({
+                    'task_id': problem['task_id'],
+                    'prompt': problem['prompt'],
+                    'canonical_solution': problem['canonical_solution']
+                })
+        dataset_dict = {d['task_id']: d for d in dataset}
+    else:
+        raise ValueError(f"Unknown dataset type: {args.dataset_type}")
+    
+    dataset = list(dataset_dict.values())[:args.sample_num]  # Convert dict to list and limit samples
 
     texts = [d['prompt'] + d['canonical_solution'] for d in dataset]
 
