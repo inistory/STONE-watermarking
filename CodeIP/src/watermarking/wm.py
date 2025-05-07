@@ -22,27 +22,32 @@ def truncate(d, max_length=200):
             d[k] = v[:, :max_length]
     return d
 
+class LSTMModel(nn.Module):
+    def __init__(self, vocab_size, embed_size, hidden_size, output_size):
+        super(LSTMModel, self).__init__()
+        self.embedding = nn.Embedding(vocab_size, embed_size)
+        self.lstm = nn.LSTM(embed_size, hidden_size, batch_first=True)
+        self.fc = nn.Linear(hidden_size, output_size)
+        self.hidden_size = hidden_size
+
+    def forward(self, x):
+        batch_size = x.size(0)
+        h0 = torch.zeros(1, batch_size, self.hidden_size).to(x.device)
+        c0 = torch.zeros(1, batch_size, self.hidden_size).to(x.device)
+        
+        embedded = self.embedding(x)
+        out, (hn, cn) = self.lstm(embedded, (h0, c0))
+        output = self.fc(hn[-1])
+        return output
+
 def main(args: WmBaseArgs):
     tokenizer = AutoTokenizer.from_pretrained(args.model_name)
     model = AutoModelForCausalLM.from_pretrained(args.model_name)
     model = model.to(args.device)
     lm_tokenizer = tokenizer
 
-    class LSTMModel(nn.Module):
-        def __init__(self, vocab_size, embed_size, hidden_size, output_size):
-            super(LSTMModel, self).__init__()
-            self.embedding = nn.Embedding(vocab_size, embed_size)
-            self.lstm = nn.LSTM(embed_size, hidden_size, batch_first=True)
-            self.fc = nn.Linear(hidden_size, output_size)
-
-        def forward(self, x):
-            embedded = self.embedding(x)
-            _, (hn, cn) = self.lstm(embedded)
-            output = self.fc(hn[-1, :, :])
-            return output
-
     model_path = os.path.join(ROOT_PATH, "watermarking", "utils", f"lstm_model_{args.language}.pth")
-    state_dict = torch.load(model_path)
+    state_dict = torch.load(model_path, map_location=args.device)
     vocab_size = state_dict['embedding.weight'].shape[0]
     embed_size = 64
     hidden_size = 128
@@ -63,7 +68,7 @@ def main(args: WmBaseArgs):
         if args.language not in ["cpp", "java"]:
             raise ValueError(f"Unsupported language for humanevalpack: {args.language}. Supported languages are: cpp, java")
             
-        output_file = os.path.join(ROOT_PATH, 'custom_evalplus', 'humanevalpack', 'data', args.language, 'data', 'humanevalpack.jsonl')
+        output_file = os.path.join(ROOT_PATH, 'humanevalpack', 'data', args.language, 'data', 'humanevalpack.jsonl')
         if not os.path.exists(output_file):
             raise FileNotFoundError(f"Dataset file not found: {output_file}")
             
@@ -132,14 +137,17 @@ def main(args: WmBaseArgs):
 
             watermark_processor.start_length = tokenized_input['input_ids'].shape[-1]
 
-            output_tokens = model.generate(
-                **tokenized_input,
-                temperature=args.temperature,
-                max_new_tokens=args.generated_length,
-                num_beams=args.num_beams,
-                repetition_penalty=None,
-                logits_processor=logit_processor
-            )
+            with torch.no_grad():
+                output_tokens = model.generate(
+                    **tokenized_input,
+                    temperature=args.temperature,
+                    max_new_tokens=args.generated_length,
+                    num_beams=args.num_beams,
+                    repetition_penalty=None,
+                    logits_processor=logit_processor,
+                    pad_token_id=tokenizer.pad_token_id if tokenizer.pad_token_id is not None else tokenizer.eos_token_id,
+                    do_sample=True
+                )
 
             output_text = tokenizer.batch_decode(
                 output_tokens[:, tokenized_input["input_ids"].shape[-1]:],

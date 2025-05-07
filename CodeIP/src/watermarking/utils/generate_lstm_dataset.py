@@ -3,12 +3,33 @@ import io
 import torch
 import tokenize
 import argparse
+import re
 from torch.utils.data import Dataset
 from datasets import load_dataset
 from typing import List
 
 TOKEN_TYPE_TO_ID = {}
 SEQ_LEN = 30
+
+# 토큰 타입 정의
+TOKEN_TYPES = {
+    # 공통 토큰 타입
+    'KEYWORD': 'keyword',
+    'IDENTIFIER': 'identifier',
+    'OPERATOR': 'operator',
+    'SEPARATOR': 'separator',
+    'LITERAL': 'literal',
+    'COMMENT': 'comment',
+    'WHITESPACE': 'whitespace',
+    
+    # C++ 특화 토큰 타입
+    'CPP_PREPROCESSOR': 'cpp_preprocessor',
+    'CPP_TEMPLATE': 'cpp_template',
+    
+    # Java 특화 토큰 타입
+    'JAVA_ANNOTATION': 'java_annotation',
+    'JAVA_MODIFIER': 'java_modifier'
+}
 
 def tokenize_python_code(code: str) -> List[int]:
     try:
@@ -26,14 +47,149 @@ def tokenize_python_code(code: str) -> List[int]:
         return []
 
 def tokenize_cpp_code(code: str) -> List[int]:
-    # C++ 코드 토크나이징 로직 구현
-    # TODO: C++ 코드 토크나이징 구현
-    return []
+    try:
+        token_ids = []
+        
+        # C++ 키워드 목록
+        cpp_keywords = {
+            'auto', 'break', 'case', 'catch', 'class', 'const', 'continue', 'default',
+            'delete', 'do', 'else', 'enum', 'explicit', 'export', 'extern', 'false',
+            'for', 'friend', 'goto', 'if', 'inline', 'mutable', 'namespace', 'new',
+            'operator', 'private', 'protected', 'public', 'return', 'sizeof', 'static',
+            'struct', 'switch', 'template', 'this', 'throw', 'true', 'try', 'typedef',
+            'typeid', 'typename', 'union', 'using', 'virtual', 'void', 'volatile', 'while'
+        }
+        
+        # 연산자와 구분자
+        operators = {'+', '-', '*', '/', '%', '=', '==', '!=', '<', '>', '<=', '>=', '&&', '||', '!', '&', '|', '^', '~', '<<', '>>', '++', '--', '+=', '-=', '*=', '/=', '%=', '&=', '|=', '^=', '<<=', '>>='}
+        separators = {'(', ')', '[', ']', '{', '}', ';', ',', '.', ':', '::', '->', '.*', '->*'}
+        
+        # 코드를 라인별로 분리
+        lines = code.split('\n')
+        
+        for line in lines:
+            # 전처리기 지시문 처리
+            if line.strip().startswith('#'):
+                if 'CPP_PREPROCESSOR' not in TOKEN_TYPE_TO_ID:
+                    TOKEN_TYPE_TO_ID['CPP_PREPROCESSOR'] = len(TOKEN_TYPE_TO_ID)
+                token_ids.append(TOKEN_TYPE_TO_ID['CPP_PREPROCESSOR'])
+                continue
+            
+            # 주석 처리
+            if '//' in line:
+                if 'COMMENT' not in TOKEN_TYPE_TO_ID:
+                    TOKEN_TYPE_TO_ID['COMMENT'] = len(TOKEN_TYPE_TO_ID)
+                token_ids.append(TOKEN_TYPE_TO_ID['COMMENT'])
+                continue
+            
+            # 템플릿 처리
+            if '<' in line and '>' in line:
+                if 'CPP_TEMPLATE' not in TOKEN_TYPE_TO_ID:
+                    TOKEN_TYPE_TO_ID['CPP_TEMPLATE'] = len(TOKEN_TYPE_TO_ID)
+                token_ids.append(TOKEN_TYPE_TO_ID['CPP_TEMPLATE'])
+            
+            # 토큰 분리
+            tokens = re.findall(r'\w+|[^\w\s]', line)
+            
+            for token in tokens:
+                if token in cpp_keywords:
+                    if 'KEYWORD' not in TOKEN_TYPE_TO_ID:
+                        TOKEN_TYPE_TO_ID['KEYWORD'] = len(TOKEN_TYPE_TO_ID)
+                    token_ids.append(TOKEN_TYPE_TO_ID['KEYWORD'])
+                elif token in operators:
+                    if 'OPERATOR' not in TOKEN_TYPE_TO_ID:
+                        TOKEN_TYPE_TO_ID['OPERATOR'] = len(TOKEN_TYPE_TO_ID)
+                    token_ids.append(TOKEN_TYPE_TO_ID['OPERATOR'])
+                elif token in separators:
+                    if 'SEPARATOR' not in TOKEN_TYPE_TO_ID:
+                        TOKEN_TYPE_TO_ID['SEPARATOR'] = len(TOKEN_TYPE_TO_ID)
+                    token_ids.append(TOKEN_TYPE_TO_ID['SEPARATOR'])
+                elif token.isdigit() or (token.startswith('"') and token.endswith('"')) or (token.startswith("'") and token.endswith("'")):
+                    if 'LITERAL' not in TOKEN_TYPE_TO_ID:
+                        TOKEN_TYPE_TO_ID['LITERAL'] = len(TOKEN_TYPE_TO_ID)
+                    token_ids.append(TOKEN_TYPE_TO_ID['LITERAL'])
+                elif token.strip():
+                    if 'IDENTIFIER' not in TOKEN_TYPE_TO_ID:
+                        TOKEN_TYPE_TO_ID['IDENTIFIER'] = len(TOKEN_TYPE_TO_ID)
+                    token_ids.append(TOKEN_TYPE_TO_ID['IDENTIFIER'])
+        
+        return token_ids
+    except Exception as e:
+        print(f"⚠️ C++ Tokenize error: {e}")
+        return []
 
 def tokenize_java_code(code: str) -> List[int]:
-    # Java 코드 토크나이징 로직 구현
-    # TODO: Java 코드 토크나이징 구현
-    return []
+    try:
+        token_ids = []
+        
+        # Java 키워드 목록
+        java_keywords = {
+            'abstract', 'assert', 'boolean', 'break', 'byte', 'case', 'catch', 'char',
+            'class', 'const', 'continue', 'default', 'do', 'double', 'else', 'enum',
+            'extends', 'final', 'finally', 'float', 'for', 'if', 'implements', 'import',
+            'instanceof', 'int', 'interface', 'long', 'native', 'new', 'package', 'private',
+            'protected', 'public', 'return', 'short', 'static', 'strictfp', 'super', 'switch',
+            'synchronized', 'this', 'throw', 'throws', 'transient', 'try', 'void', 'volatile',
+            'while'
+        }
+        
+        # Java 수정자
+        java_modifiers = {'public', 'private', 'protected', 'static', 'final', 'abstract', 'synchronized', 'volatile', 'transient', 'native'}
+        
+        # 연산자와 구분자
+        operators = {'+', '-', '*', '/', '%', '=', '==', '!=', '<', '>', '<=', '>=', '&&', '||', '!', '&', '|', '^', '~', '<<', '>>', '>>>', '++', '--', '+=', '-=', '*=', '/=', '%=', '&=', '|=', '^=', '<<=', '>>=', '>>>='}
+        separators = {'(', ')', '[', ']', '{', '}', ';', ',', '.', ':', '::', '->'}
+        
+        # 코드를 라인별로 분리
+        lines = code.split('\n')
+        
+        for line in lines:
+            # 주석 처리
+            if line.strip().startswith('//') or line.strip().startswith('/*'):
+                if 'COMMENT' not in TOKEN_TYPE_TO_ID:
+                    TOKEN_TYPE_TO_ID['COMMENT'] = len(TOKEN_TYPE_TO_ID)
+                token_ids.append(TOKEN_TYPE_TO_ID['COMMENT'])
+                continue
+            
+            # 어노테이션 처리
+            if '@' in line:
+                if 'JAVA_ANNOTATION' not in TOKEN_TYPE_TO_ID:
+                    TOKEN_TYPE_TO_ID['JAVA_ANNOTATION'] = len(TOKEN_TYPE_TO_ID)
+                token_ids.append(TOKEN_TYPE_TO_ID['JAVA_ANNOTATION'])
+            
+            # 토큰 분리
+            tokens = re.findall(r'\w+|[^\w\s]', line)
+            
+            for token in tokens:
+                if token in java_keywords:
+                    if 'KEYWORD' not in TOKEN_TYPE_TO_ID:
+                        TOKEN_TYPE_TO_ID['KEYWORD'] = len(TOKEN_TYPE_TO_ID)
+                    token_ids.append(TOKEN_TYPE_TO_ID['KEYWORD'])
+                elif token in java_modifiers:
+                    if 'JAVA_MODIFIER' not in TOKEN_TYPE_TO_ID:
+                        TOKEN_TYPE_TO_ID['JAVA_MODIFIER'] = len(TOKEN_TYPE_TO_ID)
+                    token_ids.append(TOKEN_TYPE_TO_ID['JAVA_MODIFIER'])
+                elif token in operators:
+                    if 'OPERATOR' not in TOKEN_TYPE_TO_ID:
+                        TOKEN_TYPE_TO_ID['OPERATOR'] = len(TOKEN_TYPE_TO_ID)
+                    token_ids.append(TOKEN_TYPE_TO_ID['OPERATOR'])
+                elif token in separators:
+                    if 'SEPARATOR' not in TOKEN_TYPE_TO_ID:
+                        TOKEN_TYPE_TO_ID['SEPARATOR'] = len(TOKEN_TYPE_TO_ID)
+                    token_ids.append(TOKEN_TYPE_TO_ID['SEPARATOR'])
+                elif token.isdigit() or (token.startswith('"') and token.endswith('"')) or (token.startswith("'") and token.endswith("'")):
+                    if 'LITERAL' not in TOKEN_TYPE_TO_ID:
+                        TOKEN_TYPE_TO_ID['LITERAL'] = len(TOKEN_TYPE_TO_ID)
+                    token_ids.append(TOKEN_TYPE_TO_ID['LITERAL'])
+                elif token.strip():
+                    if 'IDENTIFIER' not in TOKEN_TYPE_TO_ID:
+                        TOKEN_TYPE_TO_ID['IDENTIFIER'] = len(TOKEN_TYPE_TO_ID)
+                    token_ids.append(TOKEN_TYPE_TO_ID['IDENTIFIER'])
+        
+        return token_ids
+    except Exception as e:
+        print(f"⚠️ Java Tokenize error: {e}")
+        return []
 
 class TypeSeqDataset(Dataset):
     def __init__(self, language: str, seq_len: int = SEQ_LEN, sample_size: int = 1000):
