@@ -52,7 +52,7 @@ if __name__ == '__main__':
     parser.add_argument('--method', type=str, default="STONE")
     
     # Default parameters
-    parser.add_argument('--prefix_length', type=int, default=1)
+    parser.add_argument('--prefix_length', type=int, default=0)
     parser.add_argument('--z_threshold', type=float, default=10.0) 
     parser.add_argument('--f_scheme', type=str, default="time")
     parser.add_argument('--window_scheme', type=str, default="left")
@@ -85,14 +85,55 @@ if __name__ == '__main__':
     else:
         max_new_tokens_length = 200
 
-    transformers_config = TransformersConfig(model=AutoModelForCausalLM.from_pretrained("Qwen/Qwen2.5-Coder-7B-Instruct").to(device),
-                                            tokenizer=AutoTokenizer.from_pretrained("Qwen/Qwen2.5-Coder-7B-Instruct"),
-                                            vocab_size=50272,
-                                            device=device,
-                                            max_new_tokens=max_new_tokens_length,
-                                            min_length=200,
-                                            do_sample=True,
-                                            no_repeat_ngram_size=4)
+    if args.model == "qwensmall":
+        transformers_config = TransformersConfig(model=AutoModelForCausalLM.from_pretrained("Qwen/Qwen2.5-0.5B-Instruct").to(device),
+                                                tokenizer=AutoTokenizer.from_pretrained("Qwen/Qwen2.5-0.5B-Instruct"),
+                                                vocab_size=50272,
+                                                device=device,
+                                                max_new_tokens=max_new_tokens_length,
+                                                min_length=200,
+                                                do_sample=True,
+                                                no_repeat_ngram_size=4)        
+    elif args.model == "qwen":
+        transformers_config = TransformersConfig(model=AutoModelForCausalLM.from_pretrained("Qwen/Qwen2.5-Coder-7B-Instruct").to(device),
+                                                tokenizer=AutoTokenizer.from_pretrained("Qwen/Qwen2.5-Coder-7B-Instruct"),
+                                                vocab_size=50272,
+                                                device=device,
+                                                max_new_tokens=max_new_tokens_length,
+                                                min_length=200,
+                                                do_sample=True,
+                                                no_repeat_ngram_size=4)
+    elif args.model == "deepseek-coder-6.7b-instruct":
+        transformers_config = TransformersConfig(model=AutoModelForCausalLM.from_pretrained("deepseek-ai/deepseek-coder-6.7b-instruct", trust_remote_code=True).to(device),
+                                                tokenizer=AutoTokenizer.from_pretrained("deepseek-ai/deepseek-coder-6.7b-instruct", trust_remote_code=True),
+                                                vocab_size=50272,
+                                                device=device,
+                                                max_new_tokens=max_new_tokens_length,
+                                                min_length=200,
+                                                do_sample=True,
+                                                no_repeat_ngram_size=4)    
+    elif args.model == "llama":
+        transformers_config = TransformersConfig(model=AutoModelForCausalLM.from_pretrained("meta-llama/Llama-3.1-8B", trust_remote_code=True).to(device),
+                                                tokenizer=AutoTokenizer.from_pretrained("meta-llama/Llama-3.1-8B", trust_remote_code=True),
+                                                vocab_size=50272,
+                                                device=device,
+                                                max_new_tokens=max_new_tokens_length,
+                                                min_length=200,
+                                                do_sample=True,
+                                                no_repeat_ngram_size=4)      
+    elif args.model == "gemma":
+        transformers_config = TransformersConfig(model=AutoModelForCausalLM.from_pretrained("google/gemma-3-4b-it", trust_remote_code=True).to(device),
+                                                tokenizer=AutoTokenizer.from_pretrained("google/gemma-3-4b-it", trust_remote_code=True),
+                                                vocab_size=50272,
+                                                device=device,
+                                                max_new_tokens=max_new_tokens_length,
+                                                min_length=200,
+                                                do_sample=True,
+                                                no_repeat_ngram_size=4)
+    else:
+        print("Model not supported")
+        sys.exit(1)
+
     # Load watermark algorithm
     if args.method == "STONE":
         myWatermark = STONEAutoWatermark.load(args.method, 
