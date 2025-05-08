@@ -21,4 +21,5 @@ class WmBaseArgs:
     encode_ratio: float = 10.
     device: str = 'cuda:0'
     save_path: str = ""
+    dataset_type: str = "humaneval"
     top_k = 40

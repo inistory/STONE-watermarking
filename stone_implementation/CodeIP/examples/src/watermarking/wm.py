@@ -13,9 +13,18 @@ from .watermark_processors.message_models.PDA_message_model import PDAMessageMod
 from pygments.lexers import PythonLexer
 import torch.nn as nn
 from evalplus.data.humaneval import get_human_eval_plus
+from evalplus.data.mbpp import get_mbpp_plus
 
 ROOT_PATH = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
-MODEL_PATH = "/home/jungin/workspace/STONE-watermarking/stone_implementation/CodeIP/examples/lstm_model_python.pth"
+MODEL_PATH = os.path.join(os.path.dirname(ROOT_PATH), "lstm_model_python.pth")
+
+def get_dataset(dataset_type):
+    if dataset_type == "humaneval":
+        return get_human_eval_plus()
+    elif dataset_type == "mbpp":
+        return get_mbpp_plus()
+    else:
+        raise ValueError(f"Unknown dataset type: {dataset_type}")
 
 def truncate(d, max_length=200):
     for k, v in d.items():
@@ -52,8 +61,8 @@ def main(args: WmBaseArgs):
     lstm_model.load_state_dict(state_dict)
     lstm_model.to(args.device)
 
-    # Load dataset using get_human_eval_plus
-    dataset = get_human_eval_plus()
+    # Load dataset based on dataset type
+    dataset = get_dataset(args.dataset_type)
     dataset = list(dataset.values())[:args.sample_num]
 
     texts = [d['prompt'] + d['canonical_solution'] for d in dataset]
