@@ -19,9 +19,9 @@ mkdir -p output
 # python train_type_predictor.py
 
 # Step 3: Run watermarking for HumanEval+
-echo "Running watermarking for HumanEval+..."
-python run_wm.py --language python --dataset_type humaneval --save_path ./output/result_python_humaneval.json --model_name Qwen/Qwen2.5-Coder-7B-Instruct
+# echo "Running watermarking for HumanEval+..."
+# python run_wm.py --language python --dataset_type humaneval --save_path ./output/result_python_humaneval.json --model_name Qwen/Qwen2.5-Coder-7B-Instruct
 
 # Step 4: Run watermarking for MBPP+
-# echo "Running watermarking for MBPP+..."
-# python run_wm.py --language python --dataset_type mbpp --save_path ./output/result_python_mbpp.json --model_name Qwen/Qwen2.5-Coder-7B-Instruct
+echo "Running watermarking for MBPP+..."
+python run_wm.py --language python --dataset_type mbpp --save_path ./output/result_python_mbpp.json --model_name Qwen/Qwen2.5-Coder-7B-Instruct

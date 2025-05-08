@@ -6,7 +6,7 @@ class WmBaseArgs:
     temperature: float = 0.75 
     model_name: str = "Qwen/Qwen2.5-Coder-7B-Instruct"
     language: str = "python"
-    sample_num: int = 164
+    sample_num: int = 164  # Default value for HumanEval
     sample_seed: int = 42
     seed: int = 42
     num_beams: int = 1
@@ -23,3 +23,12 @@ class WmBaseArgs:
     save_path: str = ""
     dataset_type: str = "humaneval"
     top_k = 40
+
+    def __post_init__(self):
+        # Set sample_num based on dataset_type
+        if self.dataset_type == "mbpp":
+            self.sample_num = 399
+        elif self.dataset_type == "humaneval":
+            self.sample_num = 164
+        else:
+            raise ValueError(f"Unknown dataset type: {self.dataset_type}")
