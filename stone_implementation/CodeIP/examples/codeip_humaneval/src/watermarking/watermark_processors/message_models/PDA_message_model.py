@@ -87,66 +87,20 @@ class PDAMessageModel():
         
 
     def cal_addition_scores(self, input_ids, lm_predictions, scores, gamma):
+        selected_idx = []
+        if isinstance(lm_predictions, int):
+            lm_predictions = [lm_predictions]
         try:
-            # Ensure all tensors are on the same device
-            device = input_ids.device
-            scores = scores.to(device)
-            
-            # Print debug info
-            print(f"Debug - scores shape: {scores.shape}, device: {scores.device}")
-            print(f"Debug - vocab size: {scores.size(-1)}")
-            
-            # Convert to list if single prediction
-            if isinstance(lm_predictions, int):
-                lm_predictions = [lm_predictions]
-            elif isinstance(lm_predictions, torch.Tensor):
-                lm_predictions = lm_predictions.cpu().tolist()
-
-            # Validate predictions
-            if not lm_predictions:
-                return scores
-
-            # Get valid indices with strict bounds checking
-            valid_token_ids = set()
-            for idx in lm_predictions:
-                if not isinstance(idx, int):
-                    continue
-                if 0 <= idx < len(self.lex_and_tokenizer_id_list):
-                    token_ids = self.lex_and_tokenizer_id_list[idx]
-                    # Only add token IDs that are within vocabulary size
-                    valid_token_ids.update(i for i in token_ids if i < scores.size(-1))
-
-            if not valid_token_ids:
-                return scores
-
-            # Ensure scores tensor has correct shape
-            if scores.dim() != 2:
-                print(f"⚠️ Unexpected scores dimension: {scores.dim()}, expected 2")
-                return scores
-
-            try:
-                # Move operations to CPU for safety
-                scores_cpu = scores.cpu()
-                valid_indices = torch.tensor(list(valid_token_ids), device='cpu')
-                
-                # Create a mask tensor for valid indices
-                mask = torch.zeros_like(scores_cpu)
-                
-                # Apply gamma to valid indices using scatter_
-                mask.scatter_(1, valid_indices.unsqueeze(0).expand(scores_cpu.size(0), -1), gamma)
-                
-                # Add gamma using the mask
-                scores_cpu = scores_cpu + mask
-                
-                # Move back to original device
-                scores = scores_cpu.to(device)
-                
-            except RuntimeError as e:
-                print(f"⚠️ Error applying gamma to scores: {e}")
-                return scores
-
-            return scores
-
+            selected_idx = [self.lex_and_tokenizer_id_list[idx] for idx in lm_predictions
+                            if 0 <= idx < len(self.lex_and_tokenizer_id_list)]
         except Exception as e:
-            print(f"⚠️ Error in cal_addition_scores: {e}")
+            print(f"⚠️ Error while selecting PDA indices: {e}")
+            selected_idx = []
+
+        if not selected_idx:
+            print("⚠️ Skipping sample due to empty selected_idx (invalid predictions?)")
             return scores
+
+        for idx in selected_idx:
+            scores[:, list(idx)] = scores[:, list(idx)] + gamma
+        return scores

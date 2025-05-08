@@ -14,6 +14,10 @@ from pygments.lexers import PythonLexer
 import torch.nn as nn
 from evalplus.data import get_human_eval_plus, get_mbpp_plus
 
+# Set CUDA device
+os.environ['CUDA_VISIBLE_DEVICES'] = '0'
+torch.cuda.set_device(0)
+
 ROOT_PATH = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 
 def truncate(d, max_length=200):
@@ -131,53 +135,76 @@ def main(args: WmBaseArgs):
 
     try:
         for text in tqdm(texts):
-            tokenized_input = tokenizer(text, return_tensors='pt')
-            tokenized_input = truncate(tokenized_input, max_length=args.prompt_length)
-            tokenized_input = tokenized_input.to(model.device)
+            try:
+                print(f"\n🔍 Processing text: {text[:100]}...")  # Print first 100 chars
+                
+                tokenized_input = tokenizer(text, return_tensors='pt')
+                tokenized_input = truncate(tokenized_input, max_length=args.prompt_length)
+                tokenized_input = tokenized_input.to(model.device)
+                
+                print(f"📊 Tokenized input shape: {tokenized_input['input_ids'].shape}")
 
-            watermark_processor.start_length = tokenized_input['input_ids'].shape[-1]
+                watermark_processor.start_length = tokenized_input['input_ids'].shape[-1]
 
-            with torch.no_grad():
-                output_tokens = model.generate(
-                    **tokenized_input,
-                    temperature=args.temperature,
-                    max_new_tokens=args.generated_length,
-                    num_beams=args.num_beams,
-                    repetition_penalty=None,
-                    logits_processor=logit_processor,
-                    pad_token_id=tokenizer.pad_token_id if tokenizer.pad_token_id is not None else tokenizer.eos_token_id,
-                    do_sample=True
-                )
+                with torch.no_grad():
+                    try:
+                        print("🚀 Starting generation...")
+                        output_tokens = model.generate(
+                            **tokenized_input,
+                            temperature=1.0,  # Set to 1.0 since we handle temperature manually
+                            max_new_tokens=args.generated_length,
+                            num_beams=args.num_beams,
+                            repetition_penalty=None,
+                            logits_processor=logit_processor,
+                            pad_token_id=tokenizer.pad_token_id if tokenizer.pad_token_id is not None else tokenizer.eos_token_id,
+                            do_sample=True
+                        )
+                        print(f"✅ Generation completed. Output shape: {output_tokens.shape}")
+                    except Exception as e:
+                        print(f"❌ Error during generation: {e}")
+                        continue
 
-            output_text = tokenizer.batch_decode(
-                output_tokens[:, tokenized_input["input_ids"].shape[-1]:],
-                skip_special_tokens=True
-            )[0]
+                try:
+                    output_text = tokenizer.batch_decode(
+                        output_tokens[:, tokenized_input["input_ids"].shape[-1]:],
+                        skip_special_tokens=True
+                    )[0]
+                    print(f"📝 Generated output: {output_text[:100]}...")  # Print first 100 chars
 
-            prefix_and_output_text = tokenizer.batch_decode(output_tokens, skip_special_tokens=True)[0]
+                    prefix_and_output_text = tokenizer.batch_decode(output_tokens, skip_special_tokens=True)[0]
+                    print(f"📝 Full text: {prefix_and_output_text[:100]}...")  # Print first 100 chars
 
-            results['text'].append(text)
-            results['output_text'].append(output_text)
-            results['prefix_and_output_text'].append(prefix_and_output_text)
+                    results['text'].append(text)
+                    results['output_text'].append(output_text)
+                    results['prefix_and_output_text'].append(prefix_and_output_text)
 
-            decoded_message = watermark_processor.decode(output_text, disable_tqdm=True)[0]
-            available_message_num = args.generated_length // (int(args.message_code_len * args.encode_ratio))
-            acc = decoded_message[:available_message_num] == args.message[:available_message_num]
+                    decoded_message = watermark_processor.decode(output_text, disable_tqdm=True)[0]
+                    available_message_num = args.generated_length // (int(args.message_code_len * args.encode_ratio))
+                    acc = decoded_message[:available_message_num] == args.message[:available_message_num]
 
-            results['decoded_message'].append(decoded_message)
-            results['acc'].append(acc)
+                    results['decoded_message'].append(decoded_message)
+                    results['acc'].append(acc)
 
-            print(prefix_and_output_text)
-            print(decoded_message, acc)
+                    print(f"🎯 Decoded message: {decoded_message}, Accuracy: {acc}")
+                except Exception as e:
+                    print(f"❌ Error during post-processing: {e}")
+                    continue
+
+            except Exception as e:
+                print(f"❌ Error processing text: {e}")
+                continue
 
             torch.cuda.empty_cache()
 
     except KeyboardInterrupt:
+        print("\n⚠️ Process interrupted by user")
         pass
 
     args_dict = vars(args)
     results['args'] = args_dict
     results['task_id'] = [d['task_id'] for d in dataset]
 
+    print(f"\n💾 Saving results to {args.save_path}")
     with open(args.save_path, 'w') as f:
         json.dump(results, f, indent=4)
+    print("✅ Results saved successfully")
