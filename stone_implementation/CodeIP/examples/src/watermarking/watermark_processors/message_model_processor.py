@@ -57,7 +57,8 @@ class WmProcessorRandomMessageModel(WmProcessorBase):
             message_len = input_ids.shape[1] - self.lm_prefix_len
             cur_message = self.message[message_len // self.encode_len]
             cur_message = cur_message.reshape(-1)
-            topk_indices = torch.topk(scores, self.top_k, dim=1)[1]
+            k = min(self.top_k, scores.shape[1])  # Ensure k is not larger than the number of scores
+            topk_indices = torch.topk(scores, k, dim=1)[1]
             log_Ps = self.message_model.cal_log_Ps(input_ids, x_cur=topk_indices,
                                                    messages=cur_message)
             log_Ps = log_Ps.squeeze()
@@ -106,24 +107,33 @@ class WmProcessorRandomMessageModel(WmProcessorBase):
         for i in range(0, all_log_Ps.shape[0], self.encode_len):
             if not non_analyze:
                 nums = (all_log_Ps[i:i + self.encode_len] > 0).sum(0)
-                max_values, max_indices = torch.max(nums, 0)
-                top_values, top_indices = torch.topk(nums, 2)
-                decoded_message = messages[max_indices]
-                decoded_confidence = int(max_values)
-                decoded_probs = float(torch.softmax(nums.float(), dim=-1)[max_indices])
-                relative_decoded_confidence = int(max_values) - int(top_values[1])
+                if nums.numel() < 2:  # If nums has less than 2 elements
+                    decoded_message = 0
+                    decoded_confidence = 0
+                    decoded_probs = 0.0
+                    relative_decoded_confidence = 0
+                else:
+                    max_values, max_indices = torch.max(nums, 0)
+                    top_values, top_indices = torch.topk(nums, min(2, nums.numel()))
+                    decoded_message = messages[max_indices]
+                    decoded_confidence = int(max_values)
+                    decoded_probs = float(torch.softmax(nums.float(), dim=-1)[max_indices])
+                    relative_decoded_confidence = int(max_values) - int(top_values[1])
                 decoded_messages.append(decoded_message)
                 decoded_confidences.append(
                     (decoded_confidence, relative_decoded_confidence, decoded_probs))
             else:
                 nums = (all_log_Ps[i:i + self.encode_len] > 0).sum(0)
-                decoded_probs = torch.softmax(nums.float(), dim=-1)
-                decoded_message, decoded_prob = decoded_probs.max(0)
-                decoded_message = int(decoded_message)
+                if nums.numel() == 0:  # If nums is empty
+                    decoded_message = 0
+                    decoded_prob = 0.0
+                else:
+                    decoded_probs = torch.softmax(nums.float(), dim=-1)
+                    decoded_message, decoded_prob = decoded_probs.max(0)
+                    decoded_message = int(decoded_message)
+                    decoded_prob = float(decoded_prob)
                 decoded_messages.append(decoded_message)
-                decoded_prob = float(decoded_prob)
-                decoded_confidences.append(
-                    (-1, -1, decoded_prob))
+                decoded_confidences.append((-1, -1, decoded_prob))
 
         decoded_messages = [int(_) for _ in decoded_messages]
 

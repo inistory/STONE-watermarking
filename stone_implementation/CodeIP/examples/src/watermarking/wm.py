@@ -17,12 +17,47 @@ from evalplus.data.mbpp import get_mbpp_plus
 
 ROOT_PATH = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 MODEL_PATH = os.path.join(os.path.dirname(ROOT_PATH), "lstm_model_python.pth")
+HUMANEVALPACK_PATH = os.path.join(ROOT_PATH, "humanevalpack")
 
-def get_dataset(dataset_type):
+def get_dataset(dataset_type, language="python"):
     if dataset_type == "humaneval":
         return get_human_eval_plus()
     elif dataset_type == "mbpp":
         return get_mbpp_plus()
+    elif dataset_type == "humanevalpack":
+        if language == "java":
+            dataset = load_dataset("code_search_net", "java", split="train")
+        elif language == "cpp":
+            dataset = load_dataset("code_search_net", "cpp", split="train")
+        else:
+            raise ValueError(f"Unsupported language for HumanEvalPack: {language}")
+        
+        # Convert to the same format as other datasets
+        formatted_dataset = {}
+        for i, item in enumerate(dataset):
+            formatted_dataset[str(i)] = {
+                'task_id': str(i),
+                'prompt': item['func_documentation_string'],
+                'canonical_solution': item['func_code_string']
+            }
+        return formatted_dataset
+    elif dataset_type == "codesearchnet":
+        if language == "java":
+            dataset = load_dataset("code_search_net", "java", split="train")
+        elif language == "cpp":
+            dataset = load_dataset("code_search_net", "cpp", split="train")
+        else:
+            raise ValueError(f"Unsupported language for CodeSearchNet: {language}")
+        
+        # Convert to the same format as other datasets
+        formatted_dataset = {}
+        for i, item in enumerate(dataset):
+            formatted_dataset[str(i)] = {
+                'task_id': str(i),
+                'prompt': item['docstring'],
+                'canonical_solution': item['code']
+            }
+        return formatted_dataset
     else:
         raise ValueError(f"Unknown dataset type: {dataset_type}")
 
@@ -62,7 +97,7 @@ def main(args: WmBaseArgs):
     lstm_model.to(args.device)
 
     # Load dataset based on dataset type
-    dataset = get_dataset(args.dataset_type)
+    dataset = get_dataset(args.dataset_type, args.language)
     dataset = list(dataset.values())[:args.sample_num]
 
     texts = [d['prompt'] + d['canonical_solution'] for d in dataset]
