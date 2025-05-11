@@ -173,8 +173,6 @@ def main(args: WmBaseArgs):
     args_dict = vars(args)
     results['args'] = args_dict
     results['task_id'] = [d['task_id'] for d in dataset]
-    
-    # extraction_rate 계산
     results['extraction_rate'] = sum(results['acc']) / len(results['acc']) if results['acc'] else 0
 
     with open(args.save_path, 'w') as f:

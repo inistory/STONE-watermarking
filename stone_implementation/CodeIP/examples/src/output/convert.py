@@ -8,7 +8,6 @@ results_json_path = f"./result_{language}_{dataset_type}.json"
 output_jsonl_path = f"../../../../results/1samples/result_{language}_{dataset_type}.jsonl"
 humanevalpack_output_path = f"../../../../results/1samples/humanevalpack_{language}_result.json"
 
-# 디렉토리가 없으면 생성
 os.makedirs(os.path.dirname(output_jsonl_path), exist_ok=True)
 os.makedirs(os.path.dirname(humanevalpack_output_path), exist_ok=True)
 
@@ -25,10 +24,8 @@ with open(results_json_path, "r") as results_file:
     task_ids = results_data.get("task_id", [])
 
 
-
-# HumanEvalPack을 위한 추가 처리
 if dataset_type == "humanevalpack":
-    humanevalpack_data = [[text.strip()] for text in prefix_and_output_text]
+    humanevalpack_data = [[text.strip()] for text in prefix_and_output_text] 
     with open(humanevalpack_output_path, "w") as f:
         json.dump(humanevalpack_data, f, indent=4)
     print(f"HumanEvalPack result file is generated: {humanevalpack_output_path}")

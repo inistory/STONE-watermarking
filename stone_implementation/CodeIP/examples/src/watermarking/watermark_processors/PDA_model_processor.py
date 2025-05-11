@@ -23,12 +23,10 @@ class PDAProcessorMessageModel(WmProcessorBase):
         self.beta = beta
 
     def cal_watermark_scores(self, input_ids, beta, vocab_size):
-        # vocab_size 크기로 생성
         wm_scores = torch.zeros((input_ids.shape[0], vocab_size), dtype=torch.float, device=input_ids.device)
 
         selected_tokens = self.message_model.get_selected_tokens(input_ids)
         for idx in selected_tokens:
-            # 인덱스가 vocab_size 범위를 넘지 않도록 필터링
             idx = [i for i in idx if 0 <= i < vocab_size]
             if len(idx) > 0:
                 wm_scores[:, idx] += beta
