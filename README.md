@@ -49,7 +49,7 @@ To determine whether the generated code has a watermark, various threshold value
 
 $$\text{TPR}(\tau) = \frac{\sum_{j} \mathbf{1}(z(C_{wm}^{(j)}) > \tau)}{|{C_{wm}}|}$$
 
-- False Positive Rate (FPR): For non-watermarked code $C_{H}$, FPR is the proportion of code samples with a z-score exceeding the threshold $\tau$:
+- False Positive Rate (FPR): For non-watermarked code $C_H$, FPR is the proportion of code samples with a z-score exceeding the threshold $\tau$:
 
 $$\text{FPR}(\tau) = \frac{\sum_{i} \mathbf{1}(z(C_H^{(i)}) > \tau)}{|{C_H}|}$$
 
@@ -68,7 +68,7 @@ The difference in Perplexity between non-watermarked code $C_{H}$ and watermarke
 $$PPL(C_{wm}) = \frac{1}{|C_{wm}|} \sum_{j=1}^{|C_{wm}|} \exp \left( -\frac{1}{N_j} \sum_{i=1}^{N_j} \log P(w_i^{(j)} | w_{<i}^{(j)}) \right)$$
 
 - $N_j$: Number of tokens in the j-th code sample in $C_{wm}$.
-- $P(w_i^{(j)} | w_{<i}^{(j)})$: The probability of token w_i^(j) given its preceding context in the j-th sample
+- $P(w_i^{(j)} | w_{<i}^{(j)})$: The probability of token $w_i^{(j)}$ given its preceding context in the j-th sample, where $w_i^{(j)}$ represents the i-th token in the j-th code sample
 
 Then, the Imperceptibility score is defined as:
 
