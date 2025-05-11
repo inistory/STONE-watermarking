@@ -41,6 +41,16 @@ class PDAMessageModel():
         self.max_vocab_size = 100000
         self.pda_model = pda_model
 
+    def get_selected_tokens(self, input_ids):
+        """
+        Re-implements the token selection based on hashing mechanism used in cal_addition_scores.
+        """
+        selected_idx = []
+        for w in range(len(self.lex_and_tokenizer_id_list)):
+            idx = self.lex_and_tokenizer_id_list[w]
+            if 0 <= w < len(self.lex_and_tokenizer_id_list):
+                selected_idx.append(idx)
+        return selected_idx
 
     @property
     def random_delta(self):

@@ -16,7 +16,7 @@ from evalplus.data.humaneval import get_human_eval_plus
 from evalplus.data.mbpp import get_mbpp_plus
 
 ROOT_PATH = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
-MODEL_PATH = os.path.join(os.path.dirname(ROOT_PATH), "lstm_model_python.pth")
+MODEL_PATH = os.path.join(os.path.dirname(__file__), "utils", "lstm_model_java.pth")
 HUMANEVALPACK_PATH = os.path.join(ROOT_PATH, "humanevalpack")
 
 def get_dataset(dataset_type, language="python"):
@@ -108,7 +108,8 @@ def main(args: WmBaseArgs):
 
     pda_processor = PDAProcessorMessageModel(message_model=pda_model,
                                              tokenizer=tokenizer,
-                                             gamma=args.gamma)
+                                             gamma=args.gamma,
+                                             beta=args.beta)
 
     logit_processor = LogitsProcessorList([
         min_length_processor,
@@ -172,6 +173,9 @@ def main(args: WmBaseArgs):
     args_dict = vars(args)
     results['args'] = args_dict
     results['task_id'] = [d['task_id'] for d in dataset]
+    
+    # extraction_rate 계산
+    results['extraction_rate'] = sum(results['acc']) / len(results['acc']) if results['acc'] else 0
 
     with open(args.save_path, 'w') as f:
         json.dump(results, f, indent=4)
