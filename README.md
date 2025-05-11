@@ -67,9 +67,8 @@ The difference in Perplexity between non-watermarked code $C_{H}$ and watermarke
 
 $$PPL(C_{wm}) = \frac{1}{|C_{wm}|} \sum_{j=1}^{|C_{wm}|} \exp \left( -\frac{1}{N_j} \sum_{i=1}^{N_j} \log P(w_i^{(j)} | w_{<i}^{(j)}) \right)$$
 
-- $N_j$: Number of tokens in the $j$-th code sample in $C_{wm}$.
-- $P(w_i^{(j)} | w_{<i}^{(j)})$: The probability of token 
-$w_{i}^{(j)}$ given its preceding context in the $j$-th sample
+- $N_j$: Number of tokens in the j-th code sample in $C_{wm}$.
+- $P(w_i^{(j)} | w_{<i}^{(j)})$: The probability of token w_i^(j) given its preceding context in the j-th sample
 
 Then, the Imperceptibility score is defined as:
 
