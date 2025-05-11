@@ -16,7 +16,6 @@ from evalplus.data.humaneval import get_human_eval_plus
 from evalplus.data.mbpp import get_mbpp_plus
 
 ROOT_PATH = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
-MODEL_PATH = os.path.join(os.path.dirname(__file__), "utils", "lstm_model_java.pth")
 HUMANEVALPACK_PATH = os.path.join(ROOT_PATH, "humanevalpack")
 
 def get_dataset(dataset_type, language="python"):
@@ -56,6 +55,8 @@ def main(args: WmBaseArgs):
     model = model.to(args.device)
     lm_tokenizer = tokenizer
 
+    model_path = os.path.join(os.path.dirname(__file__), "utils", f"lstm_model_{args.language}.pth")
+
     class LSTMModel(nn.Module):
         def __init__(self, vocab_size, embed_size, hidden_size, output_size):
             super(LSTMModel, self).__init__()
@@ -69,7 +70,7 @@ def main(args: WmBaseArgs):
             output = self.fc(hn[-1, :, :])
             return output
 
-    state_dict = torch.load(MODEL_PATH)
+    state_dict = torch.load(model_path)  
     vocab_size = state_dict['embedding.weight'].shape[0]
     embed_size = 64
     hidden_size = 128

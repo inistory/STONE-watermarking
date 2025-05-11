@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
 from generate_lstm_dataset import TypeSeqDataset
+from train_lstm import RandomSequenceDataset
 import os
 import argparse
 
@@ -39,17 +40,20 @@ def train():
     if args.language == 'java':
         MODEL_PATH = os.path.join(os.path.dirname(__file__), "lstm_model_java.pth")
         vocab_size = 100
+        dataset = TypeSeqDataset(seq_len=SEQ_LENGTH)
     elif args.language == 'cpp':
         MODEL_PATH = os.path.join(os.path.dirname(__file__), "lstm_model_cpp.pth")
         vocab_size = 100
+        dataset = RandomSequenceDataset(num_samples=10000)
     else:  # python
         MODEL_PATH = os.path.join(os.path.dirname(__file__), "lstm_model_python.pth")
         vocab_size = 79
+        dataset = TypeSeqDataset(seq_len=SEQ_LENGTH)
 
-    dataset = TypeSeqDataset(seq_len=SEQ_LENGTH)
     dataloader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=True)
 
     print(f"📚 Using vocab size: {vocab_size} for {args.language}")
+    print(f"📊 Using {'random sequence' if args.language == 'cpp' else 'type sequence'} dataset")
 
     model = TypePredictor(vocab_size=vocab_size, embed_size=EMBED_SIZE, hidden_size=HIDDEN_SIZE)
     criterion = nn.CrossEntropyLoss()

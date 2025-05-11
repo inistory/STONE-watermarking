@@ -70,37 +70,6 @@ def tokenize_java_code(code: str) -> List[int]:
         print(f"⚠️ Tokenize error: {e}")
         return []
 
-def tokenize_cpp_code(code: str) -> List[int]:
-    try:
-        token_ids = []
-        # C++ token types
-        token_types = {
-            'KEYWORD': r'\b(public|private|protected|class|struct|namespace|using|template|typename|const|static|void|int|char|bool|return|if|else|while|for|try|catch|throw|new|delete|this|nullptr)\b',
-            'IDENTIFIER': r'\b[a-zA-Z_][a-zA-Z0-9_]*\b',
-            'NUMBER': r'\b\d+\b',
-            'STRING': r'"[^"]*"',
-            'OPERATOR': r'[+\-*/=<>!&|^%]',
-            'SEPARATOR': r'[(){}[\];,.]',
-            'COMMENT': r'//.*|/\*[\s\S]*?\*/',
-            'WHITESPACE': r'\s+'
-        }
-        
-        # Create a pattern that matches any token
-        pattern = '|'.join(f'(?P<{name}>{pattern})' for name, pattern in token_types.items())
-        
-        for match in re.finditer(pattern, code):
-            token_type = match.lastgroup
-            if token_type == 'WHITESPACE' or token_type == 'COMMENT':
-                continue
-            if token_type not in TOKEN_TYPE_TO_ID:
-                TOKEN_TYPE_TO_ID[token_type] = len(TOKEN_TYPE_TO_ID)
-            token_ids.append(TOKEN_TYPE_TO_ID[token_type])
-            
-        return token_ids
-    except Exception as e:
-        print(f"⚠️ Tokenize error: {e}")
-        return []
-
 class TypeSeqDataset(Dataset):
     def __init__(self, seq_len: int = SEQ_LEN, sample_size: int = 1000, dataset_type: str = "code_search_net", language: str = "python"):
         self.samples = []
@@ -121,8 +90,7 @@ class TypeSeqDataset(Dataset):
         # Select tokenizer based on language
         tokenizer = {
             'python': tokenize_python_code,
-            'java': tokenize_java_code,
-            'cpp': tokenize_cpp_code
+            'java': tokenize_java_code
         }.get(language, tokenize_python_code)
 
         for idx, item in enumerate(dataset):
