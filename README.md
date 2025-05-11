@@ -32,27 +32,24 @@ Correctness evaluates whether the code works correctly before and after watermar
 - Therefore, $1 - \frac{\binom{n - c}{k}}{\binom{n}{k}}$ represents the probability that at least one correct code sample is included when $k$ samples are selected, and the overall correctness score is evaluated as the expectation of this probability over the watermark code set $C_{wm}$.
 
 ### 2. Detectability
-Detectability evaluates how clearly the watermark is embedded in the code using statistical metrics such as the $z$-score and AUROC.
+Detectability evaluates how clearly the watermark is embedded in the code using statistical metrics such as the z-score and AUROC.
 
-#### 2-1. $z$-score: Green Token Ratio
+#### 2-1. z-score: Green Token Ratio
 $$z(C_{wm}) = \frac{|C_{wm}|_G - \gamma T}{\sqrt{T \gamma (1 - \gamma)}}$$
 
 - $∣C_{wm}∣_G$ : The number of green list tokens in the watermarked code
 - $T$ : Total number of tokens in the code
 - $\gamma$: Expected proportion of green tokens in non-watermarked code
 - The denominator represents the standard deviation under a binomial distribution. 
-- $z$-score indicates how many standard deviations the actual count of green tokens deviates from the expected count; a larger value means the watermark is more clearly present.
-
+- The z-score indicates how many standard deviations the actual count of green tokens deviates from the expected count; a larger value means the watermark is more clearly present.
 
 #### 2-2. Detecting LLM-Generated Code Using the Green Token Ratio
 To determine whether the generated code has a watermark, various threshold values $\tau$ are applied to compute the True Positive Rate (TPR) and False Positive Rate (FPR).
-- True Positive Rate (TPR): For watermarked code $C_{wm}$, TPR is the proportion of code samples with a $z$-score exceeding the threshold $\tau$.
+- True Positive Rate (TPR): For watermarked code $C_{wm}$, TPR is the proportion of code samples with a z-score exceeding the threshold $\tau$.
 
 $$\text{TPR}(\tau) = \frac{\sum_{j} \mathbf{1}(z(C_{wm}^{(j)}) > \tau)}{|{C_{wm}}|}$$
 
-- False Positive Rate (FPR): For non-watermarked code 
-$C_{H}$, FPR is the proportion of code samples with a 
-$z$-score exceeding the threshold $\tau$:
+- False Positive Rate (FPR): For non-watermarked code $C_{H}$, FPR is the proportion of code samples with a z-score exceeding the threshold $\tau$:
 
 $$\text{FPR}(\tau) = \frac{\sum_{i} \mathbf{1}(z(C_H^{(i)}) > \tau)}{|{C_H}|}$$
 
@@ -61,7 +58,7 @@ $$\mathrm{Detectability}(C_{wm}, C_H) = \int_{-\infty}^{\infty} \text{TPR}(\tau)
 
 - The Detectability score is obtained by integrating the relationship between TPR and FPR over all threshold values $\tau$, which calculates the AUROC.
 - An AUROC value close to 1 indicates that the watermark is clearly distinguishable, whereas a value near 0.5 indicates that watermarked and non-watermarked code are difficult to distinguish.
-- A high AUROC value demonstrates that the distribution differences of the $z$-scores based on the green token ratio effectively separate watermarked code from non-watermarked code.
+- A high AUROC value demonstrates that the distribution differences of the z-scores based on the green token ratio effectively separate watermarked code from non-watermarked code.
 
 ### 3. Imperceptibility
 Imperceptibility assesses whether the code remains fluent (in terms of Perplexity) after watermark insertion, ensuring that it appears natural to human readers.
