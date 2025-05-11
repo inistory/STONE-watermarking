@@ -19,7 +19,7 @@ def calculate_perplexity(text):
         perplexity = torch.exp(loss)
     return perplexity.item()
 
-jsonl_file_path = "../../../results/1samples/codeip_results.jsonl" 
+jsonl_file_path = "../../../../results/1samples/result_python_humaneval-sanitized.jsonl"
 
 with open(jsonl_file_path, "r") as file:
     lines = file.readlines()
@@ -29,6 +29,11 @@ for line in lines:
     data = json.loads(line)
     if "completion" in data:
         text = data["completion"]
+        perplexity = calculate_perplexity(text)
+        perplexities.append(perplexity)
+        print(f"Task ID: {data['task_id']}, Perplexity: {perplexity}")
+    if "solution" in data:
+        text = data["solution"]
         perplexity = calculate_perplexity(text)
         perplexities.append(perplexity)
         print(f"Task ID: {data['task_id']}, Perplexity: {perplexity}")
