@@ -15,7 +15,7 @@ do
         do 
             for method in "STONE" "SWEET" "EWD" "KGW"  
             do 
-                for model in "qwensmall" #"qwen"
+                for model in "qwen3b" #"qwen"
                 do 
                     for data in "humanevalpack"
                     do
@@ -49,7 +49,7 @@ do
         do 
             for method in "STONE" "SWEET" "EWD" "KGW"  
             do 
-                for model in "qwensmall" #"qwen"
+                for model in "qwen3b" #"qwen"
                 do 
                     for data in "mbppplus" 
                     do
@@ -76,7 +76,7 @@ do
         do 
             for method in "STONE" "SWEET" "EWD" "KGW"  
             do 
-                for model in "qwensmall" #"qwen"
+                for model in "qwen3b" #"qwen"
                 do 
                     for data in "humanevalplus" 
                     do

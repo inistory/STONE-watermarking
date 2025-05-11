@@ -85,45 +85,18 @@ if __name__ == '__main__':
     else:
         max_new_tokens_length = 200
 
-    if args.model == "qwensmall":
-        transformers_config = TransformersConfig(model=AutoModelForCausalLM.from_pretrained("Qwen/Qwen2.5-0.5B-Instruct").to(device),
-                                                tokenizer=AutoTokenizer.from_pretrained("Qwen/Qwen2.5-0.5B-Instruct"),
+    if args.model == "qwen3b":
+        transformers_config = TransformersConfig(model=AutoModelForCausalLM.from_pretrained("Qwen/Qwen2.5-Coder-3B-Instruct").to(device),
+                                                tokenizer=AutoTokenizer.from_pretrained("Qwen/Qwen2.5-Coder-3B-Instruct"),
                                                 vocab_size=50272,
                                                 device=device,
                                                 max_new_tokens=max_new_tokens_length,
                                                 min_length=200,
                                                 do_sample=True,
-                                                no_repeat_ngram_size=4)        
+                                                no_repeat_ngram_size=4) 
     elif args.model == "qwen":
         transformers_config = TransformersConfig(model=AutoModelForCausalLM.from_pretrained("Qwen/Qwen2.5-Coder-7B-Instruct").to(device),
                                                 tokenizer=AutoTokenizer.from_pretrained("Qwen/Qwen2.5-Coder-7B-Instruct"),
-                                                vocab_size=50272,
-                                                device=device,
-                                                max_new_tokens=max_new_tokens_length,
-                                                min_length=200,
-                                                do_sample=True,
-                                                no_repeat_ngram_size=4)
-    elif args.model == "deepseek-coder-6.7b-instruct":
-        transformers_config = TransformersConfig(model=AutoModelForCausalLM.from_pretrained("deepseek-ai/deepseek-coder-6.7b-instruct", trust_remote_code=True).to(device),
-                                                tokenizer=AutoTokenizer.from_pretrained("deepseek-ai/deepseek-coder-6.7b-instruct", trust_remote_code=True),
-                                                vocab_size=50272,
-                                                device=device,
-                                                max_new_tokens=max_new_tokens_length,
-                                                min_length=200,
-                                                do_sample=True,
-                                                no_repeat_ngram_size=4)    
-    elif args.model == "llama":
-        transformers_config = TransformersConfig(model=AutoModelForCausalLM.from_pretrained("meta-llama/Llama-3.1-8B", trust_remote_code=True).to(device),
-                                                tokenizer=AutoTokenizer.from_pretrained("meta-llama/Llama-3.1-8B", trust_remote_code=True),
-                                                vocab_size=50272,
-                                                device=device,
-                                                max_new_tokens=max_new_tokens_length,
-                                                min_length=200,
-                                                do_sample=True,
-                                                no_repeat_ngram_size=4)      
-    elif args.model == "gemma":
-        transformers_config = TransformersConfig(model=AutoModelForCausalLM.from_pretrained("google/gemma-3-4b-it", trust_remote_code=True).to(device),
-                                                tokenizer=AutoTokenizer.from_pretrained("google/gemma-3-4b-it", trust_remote_code=True),
                                                 vocab_size=50272,
                                                 device=device,
                                                 max_new_tokens=max_new_tokens_length,
@@ -227,14 +200,14 @@ if __name__ == '__main__':
             unwatermarked_codes.append(unwatermarked_completions)  
         elif args.data == 'mbppplus':
             for completion in watermarked_completions:
-                watermarked_codes.append({"task_id": task_id, "solution": completion})
+                watermarked_codes.append({"task_id": f"Mbpp/{task_id}", "solution": completion})
             for completion in unwatermarked_completions:
-                unwatermarked_codes.append({"task_id": task_id, "solution": completion})
+                unwatermarked_codes.append({"task_id": f"Mbpp/{task_id}", "solution": completion})
         else:
             for completion in watermarked_completions:
-                watermarked_codes.append({"task_id": task_id, "completion": completion})
+                watermarked_codes.append({"task_id": f"HumanEval/{task_id}", "completion": completion})
             for completion in unwatermarked_completions:
-                unwatermarked_codes.append({"task_id": task_id, "completion": completion})            
+                unwatermarked_codes.append({"task_id": f"HumanEval/{task_id}", "completion": completion})            
 
     # Calculate average perplexity for each sample
     average_perplexity_watermarked_samples = []
