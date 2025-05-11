@@ -14,9 +14,9 @@ We propose STONE, a syntax-aware watermarking method that embeds watermarks only
 
 The overall performance of a watermarking technique is evaluated using CWEM, which integrates functional correctness, detectability, and imperceptibility into a single metric:
 
-$$CWEM = \alpha \cdot \mathrm{Correctness}(C_{wm}) + \beta \cdot \mathrm{Detectability}(C_{wm}) + \gamma \cdot \mathrm{Naturalness}(C_{wm},C)$$
+$$CWEM = \alpha \cdot \mathrm{Correctness}(C_{wm}) + \beta \cdot \mathrm{Detectability}(C_{wm}) + \zeta \cdot \mathrm{Naturalness}(C_{wm},C)$$
 
-with the condition that $\alpha + \beta + \gamma = 1$. 
+with the condition that $\alpha + \beta + \zeta = 1$. 
 
 The individual components are defined as follows:
 
