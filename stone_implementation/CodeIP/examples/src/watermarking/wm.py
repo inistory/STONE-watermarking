@@ -80,11 +80,11 @@ def main(args: WmBaseArgs):
     lstm_model.load_state_dict(state_dict)
     lstm_model.to(args.device)
 
-    # Load dataset based on dataset type
     dataset = get_dataset(args.dataset_type, args.language)
     dataset = list(dataset.values())[:args.sample_num]
 
-    texts = [d['prompt'] + d['canonical_solution'] for d in dataset]
+    texts = [d['prompt'] for d in dataset]
+    canonical_solutions = [d['canonical_solution'] for d in dataset]  
 
     lm_message_model = RandomMessageModel(tokenizer=tokenizer,
                                           lm_tokenizer=lm_tokenizer,
@@ -125,11 +125,12 @@ def main(args: WmBaseArgs):
         'prefix_and_output_text': [],
         'output_text': [],
         'decoded_message': [],
-        'acc': []
+        'acc': [],
+        'canonical_solution': []  
     }
 
     try:
-        for text in tqdm(texts):
+        for text, canonical_solution in tqdm(zip(texts, canonical_solutions)):
             tokenized_input = tokenizer(text, return_tensors='pt')
             tokenized_input = truncate(tokenized_input, max_length=args.prompt_length)
             tokenized_input = tokenized_input.to(model.device)
@@ -155,6 +156,7 @@ def main(args: WmBaseArgs):
             results['text'].append(text)
             results['output_text'].append(output_text)
             results['prefix_and_output_text'].append(prefix_and_output_text)
+            results['canonical_solution'].append(canonical_solution)  # 정답 코드 저장
 
             decoded_message = watermark_processor.decode(output_text, disable_tqdm=True)[0]
             available_message_num = args.generated_length // (int(args.message_code_len * args.encode_ratio))
