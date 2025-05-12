@@ -12,7 +12,7 @@ class WmBaseArgs:
     num_beams: int = 1
     delta: float = 5.0
     gamma: float = 3.0
-    beta: float = 3.0
+    beta: float = 5.0
     repeat_penalty: float = 1.2
     ngram_size: int = 10
     message: List[int] = field(default_factory=lambda: [2024, 2024, 2024, 2024, 2024])
