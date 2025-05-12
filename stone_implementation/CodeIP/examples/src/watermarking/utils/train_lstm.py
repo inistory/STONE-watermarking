@@ -5,14 +5,14 @@ from torch.utils.data import DataLoader, Dataset
 import os
 
 LANGUAGE = "python"
-VOCAB_SIZE = 79
-SEQ_LENGTH = 30
+VOCAB_SIZE = 100
+SEQ_LENGTH = 15
 EMBED_SIZE = 64
 HIDDEN_SIZE = 128
 OUTPUT_SIZE = VOCAB_SIZE
-BATCH_SIZE = 128
-EPOCHS = 10
-LEARNING_RATE = 0.001
+BATCH_SIZE = 32
+EPOCHS = 1
+LEARNING_RATE = 0.0001
 MODEL_SAVE_PATH = f"lstm_model_{LANGUAGE}.pth"
 
 class RandomSequenceDataset(Dataset):

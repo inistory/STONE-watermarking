@@ -10,7 +10,7 @@ from datasets import load_dataset
 from typing import List
 
 TOKEN_TYPE_TO_ID = {}
-SEQ_LEN = 30
+SEQ_LEN = 15
 
 class LSTMModel(nn.Module):
     def __init__(self, vocab_size, embedding_dim=128, hidden_dim=256, num_layers=2):
@@ -121,7 +121,7 @@ if __name__ == "__main__":
                       help='Programming language to use (e.g., python, java)')
     parser.add_argument('--batch_size', type=int, default=32,
                       help='Batch size for training')
-    parser.add_argument('--epochs', type=int, default=10,
+    parser.add_argument('--epochs', type=int, default=1,
                       help='Number of epochs to train')
     parser.add_argument('--learning_rate', type=float, default=0.001,
                       help='Learning rate for training')

@@ -6,12 +6,12 @@ from train_lstm import RandomSequenceDataset
 import os
 import argparse
 
-EMBED_SIZE = 64
+EMBED_SIZE =64
 HIDDEN_SIZE = 128
-SEQ_LENGTH = 30
-BATCH_SIZE = 128
+SEQ_LENGTH = 15
+BATCH_SIZE = 32
 EPOCHS = 1
-LEARNING_RATE = 0.001
+LEARNING_RATE = 0.0001
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -39,16 +39,16 @@ def train():
     # Set model path based on language
     if args.language == 'java':
         MODEL_PATH = os.path.join(os.path.dirname(__file__), "lstm_model_java.pth")
-        vocab_size = 100
         dataset = TypeSeqDataset(seq_len=SEQ_LENGTH)
     elif args.language == 'cpp':
         MODEL_PATH = os.path.join(os.path.dirname(__file__), "lstm_model_cpp.pth")
-        vocab_size = 100
         dataset = RandomSequenceDataset(num_samples=10000)
     else:  # python
         MODEL_PATH = os.path.join(os.path.dirname(__file__), "lstm_model_python.pth")
-        vocab_size = 79
         dataset = TypeSeqDataset(seq_len=SEQ_LENGTH)
+
+    # 모든 언어에 대해 동일한 vocab_size 사용
+    vocab_size = 100
 
     dataloader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=True)
 
