@@ -14,7 +14,7 @@ We propose STONE, a syntax-aware watermarking method that embeds watermarks only
 
 The overall performance of a watermarking technique is evaluated using CWEM, which integrates functional correctness, detectability, and imperceptibility into a single metric:
 
-$$CWEM = \alpha \cdot \mathrm{Correctness}(C_{wm}) + \beta \cdot \mathrm{Detectability}(C_{wm}) + \zeta \cdot \mathrm{Naturalness}(C_{wm},C)$$
+$$CWEM = \alpha \cdot \mathrm{Correctness}(C_{wm}) + \beta \cdot \mathrm{Detectability}(C_{wm}, C_{H}) + \zeta \cdot \mathrm{Naturalness}(C_{wm},C)$$
 
 with the condition that $\alpha + \beta + \zeta = 1$. 
 
@@ -35,10 +35,10 @@ Correctness evaluates whether the code works correctly before and after watermar
 Detectability evaluates how clearly the watermark is embedded in the code using statistical metrics such as the z-score and AUROC.
 
 #### 2-1. z-score: Green Token Ratio
-$$z(C_{wm}) = \frac{|C_{wm}|_G - \gamma T}{\sqrt{T \gamma (1 - \gamma)}}$$
+$$z(X_{wm}) = \frac{|X_{wm}|_G - \gamma |X_{wm}|}{\sqrt{\gamma (1 - \gamma)|X_{wm}|}}$$
 
-- $∣C_{wm}∣_G$ : The number of green list tokens in the watermarked code
-- $T$ : Total number of tokens in the code
+- $∣X_{wm}∣_G$ : The number of green list tokens in the watermarked code
+- $|X_{wm}|$ : Total number of tokens in the code
 - $\gamma$: Expected proportion of green tokens in non-watermarked code
 - The denominator represents the standard deviation under a binomial distribution. 
 - The z-score indicates how many standard deviations the actual count of green tokens deviates from the expected count; a larger value means the watermark is more clearly present.
@@ -47,14 +47,14 @@ $$z(C_{wm}) = \frac{|C_{wm}|_G - \gamma T}{\sqrt{T \gamma (1 - \gamma)}}$$
 To determine whether the generated code has a watermark, various threshold values $\tau$ are applied to compute the True Positive Rate (TPR) and False Positive Rate (FPR).
 - True Positive Rate (TPR): For watermarked code $C_{wm}$, TPR is the proportion of code samples with a z-score exceeding the threshold $\tau$.
 
-$$\text{TPR}(\tau) = \frac{\sum_{j} \mathbf{1}(z(C_{wm}^{(j)}) > \tau)}{|{C_{wm}}|}$$
+$$\text{TPR}(\tau) = \frac{\sum_{j}^{J} \mathbf{1}[z(X_{wm}^{(j)}) > \tau]}{J}$$
 
 - False Positive Rate (FPR): For non-watermarked code $C_H$, FPR is the proportion of code samples with a z-score exceeding the threshold $\tau$:
 
-$$\text{FPR}(\tau) = \frac{\sum_{i} \mathbf{1}(z(C_H^{(i)}) > \tau)}{|{C_H}|}$$
+$$\text{FPR}(\tau) = \frac{\sum_{i}^{I} \mathbf{1}[z(X_H^{(i)}) > \tau]}{I}$$
 
 #### 2-3. Overall Detectability Using AUROC
-$$\mathrm{Detectability}(C_{wm}, C_H) = \int_{-\infty}^{\infty} \text{TPR}(\tau) \frac{d\text{FPR}(\tau)}{d\tau} d\tau$$
+$$\mathrm{Detectability}(C_{wm}, C_H) = \int_{0}^{1} \text{TPR}(\text{FPR})d(\text{FPR})$$
 
 - The Detectability score is obtained by integrating the relationship between TPR and FPR over all threshold values $\tau$, which calculates the AUROC.
 - An AUROC value close to 1 indicates that the watermark is clearly distinguishable, whereas a value near 0.5 indicates that watermarked and non-watermarked code are difficult to distinguish.
@@ -65,10 +65,10 @@ Imperceptibility assesses whether the code remains fluent (in terms of Perplexit
 
 The difference in Perplexity between non-watermarked code $C_{H}$ and watermarked code $C_{wm}$ is normalized to measure imperceptibility.
 
-$$PPL(C_{wm}) = \frac{1}{|C_{wm}|} \sum_{j=1}^{|C_{wm}|} \exp \left( -\frac{1}{N_j} \sum_{i=1}^{N_j} \log P(w_i^{(j)} | w_{<i}^{(j)}) \right)$$
+$$PPL(C_{wm}) = \frac{1}{|C_{wm}|} \sum_{j=1}^{|C_{wm}|} \exp \left( -\frac{1}{N_j} \sum_{i=1}^{N_j} \log P(y_i^{(j)} | y_{<i}^{(j)}) \right)$$
 
 - $N_j$: Number of tokens in the j-th code sample in $C_{wm}$.
-- $P(w_i^{(j)} | w_{<i}^{(j)})$: The probability of token $w_i^{(j)}$ given its preceding context in the j-th sample, where $w_i^{(j)}$ represents the i-th token in the j-th code sample
+- $P(y_i^{(j)} | y_{<i}^{(j)})$: The probability of token $y_i^{(j)}$ given its preceding context in the j-th sample, where $y_i^{(j)}$ represents the i-th token in the j-th code sample
 
 Then, the Imperceptibility score is defined as:
 
@@ -120,12 +120,8 @@ bash run.sh
 1-2. Train CodeIP
 Generating watermarked machined-generated code:
 ```bash
-cd CodeIP/examples/codeip_humaneval/src/watermarking/utils
-python generate_lstm_dataset.py
-python train_type_predictor.py
-
-cd CodeIP/examples/codeip_humaneval/src/
-python run_wm.py --language python --save_path ./output/result_python.json
+cd stone_implementation/CodeIP/examples/src
+bash run_wm.sh
 ```
 
 ### Evaluating
@@ -144,13 +140,62 @@ bash pass_evaluation.sh
 tar -cvf bigcode-evaluation-harness.tar.gz bigcode-evaluation-harness
 tar -cvf results.tar.gz ./stone_implementation/results
 ```
-Upload bigcode-evaluation-harness.tar.gz and results.tar.gz to Google Drive and run the notebook file below to calculate the correctness score.
+Upload bigcode-evaluation-harness.tar.gz and results.tar.gz to Google Drive and run on colab notebook.
 
-https://drive.google.com/file/d/1IymQy7fJyKFYSgZokuWVfW1yThNJxQ53/view?usp=sharing
+#### 1-1-2. Evaluating HumanEvalPack
+
+#### 1) Prepare Result Files
+```bash
+# Compress files needed for evaluation
+tar -cvf bigcode-evaluation-harness.tar.gz bigcode-evaluation-harness
+tar -cvf results.tar.gz ./stone_implementation/results
+```
+
+#### 2) Google Colab Setup
+1. Upload the compressed files to Google Drive
+2. Run the following code in a Colab notebook:
+
+```python
+# Mount Google Drive
+from google.colab import drive
+drive.mount('/content/drive')
+
+# Set up working directory and extract files
+%cd /content/drive/MyDrive/
+!tar -xvf results.tar.gz
+!tar -xvf bigcode-evaluation-harness.tar.gz
+
+# Install required packages
+%cd /content/drive/MyDrive/bigcode-evaluation-harness
+!pip install -r requirements.txt
+!pip install datasets evaluate
+```
+
+#### 3) Run Evaluation
+```python
+# Evaluation settings
+language = 'cpp'      # Programming language to evaluate
+model = 'qwen'        # Model to use
+method = 'STONE'      # Watermarking method
+hash_key = '15485863' # Hash key
+
+# Set input file path
+input_file_path = f"/content/drive/MyDrive/results/5samples/humanevalpack_{language}_{model}_{method}_{hash_key}__unwatermarked_solutions.json"
+
+# Run evaluation
+!python main.py \
+    --tasks humanevalsynthesize-{language} \
+    --n_samples 5 \
+    --batch_size 5 \
+    --allow_code_execution \
+    --postprocess \
+    --trust_remote_code \
+    --load_generations_path {input_file_path}
+```
 
 1-2. For CodeIP
 ```bash
-cd CodeIP/examples/codeip_humaneval/src/output
+cd stone_implementation/CodeIP/examples/src/output
 python convert.py
 bash pass_evaluation.sh
 ```
@@ -164,12 +209,11 @@ AUROC_perplexity.ipynb
 2-2. For CodeIP
 ```bash
 #1) Getting detectability score
-cd CodeIP/examples/codeip_humaneval/src/output
-# Check the "acc" value in the "codeip_results.json" file and calculate the success rate.
-Success Rate = (Count the number of "TRUE" values) / (Count the length of the "acc" list)
+cd stone_implementation/CodeIP/examples/src/output
+# Check the "acc" value in the "codeip_results.json" file and see "extration_rate"
 
 #2) Getting imperceptibility score
-cd CodeIP/examples/codeip_humaneval/src/output
+cd stone_implementation/CodeIP/examples/src/output
 python perplexity.py
 ```
 
