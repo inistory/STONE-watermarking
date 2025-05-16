@@ -201,7 +201,7 @@ def main(args: WmBaseArgs):
 
                 decoded_message = watermark_processor.decode(output_text, disable_tqdm=True)[0]
                 message_ratio = args.message_code_len * args.encode_ratio
-                available_message_num = int(args.generated_length / message_ratio)  # 정수 나눗셈 대신 float 사용
+                available_message_num = int(args.generated_length / message_ratio)
                 acc = decoded_message[:available_message_num] == args.message[:available_message_num]
 
                 results['text'].append(text)
