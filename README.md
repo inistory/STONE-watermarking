@@ -89,9 +89,23 @@ STONE-watermarking/
 │   ├── custom_evalplus/        # Custom evaluation scripts
 │   │   └── evalplus/
 │   │       └── pass_evaluation.sh  # Script to evaluate HumanEvalplus and MBPPplus
-│   └──  evaluation/             # Evaluation scripts and notebooks
-│       ├── AUROC_perplexity.ipynb # Notebook to calculate detectability and imperceptibility scores
-│       └── cwem.py             # Script to calculate CWEM score
+│   ├── evaluation/            # Evaluation scripts and notebooks
+│   │   ├── AUROC_perplexity.ipynb # Notebook to calculate detectability and imperceptibility scores
+│   │   └── cwem.py            # Script to calculate CWEM score
+│   └── CodeIP/                # CodeIP implementation directory
+│       └── examples/
+│           └── src/
+│               ├── watermarking/           # Watermarking implementation
+│               │   ├── watermark_processors/  # Different watermarking methods
+│               │   ├── utils/               # Utility functions
+│               │   └── wm.py               # Main watermarking script
+│               ├── humanevalpack/          # HumanEvalPack dataset
+│               │   └── data/               # Dataset files for different languages
+│               ├── output/                 # Output directory
+│               │   ├── convert.py          # Script to convert output format
+│               │   ├── perplexity.py       # Script to calculate perplexity
+│               │   └── pass_evaluation.sh  # Script to evaluate CodeIP results
+│               └── run_wm.sh              # Script to run CodeIP watermarking
 └── README.md                   # Project documentation
 ```
 
