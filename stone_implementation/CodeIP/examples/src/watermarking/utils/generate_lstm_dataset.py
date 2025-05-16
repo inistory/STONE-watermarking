@@ -121,7 +121,7 @@ if __name__ == "__main__":
                       help='Programming language to use (e.g., python, java)')
     parser.add_argument('--batch_size', type=int, default=32,
                       help='Batch size for training')
-    parser.add_argument('--epochs', type=int, default=1,
+    parser.add_argument('--epochs', type=int, default=10,
                       help='Number of epochs to train')
     parser.add_argument('--learning_rate', type=float, default=0.001,
                       help='Learning rate for training')

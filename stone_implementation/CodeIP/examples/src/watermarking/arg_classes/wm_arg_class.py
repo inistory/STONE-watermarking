@@ -24,6 +24,8 @@ class WmBaseArgs:
     save_path: str = ""
     dataset_type: str = "humaneval"  # Can be "humaneval", "mbpp", or "humanevalpack"
     top_k = 40
+    n_samples: int = 1  # Number of samples to generate per task
+    use_pda: bool = False  # Whether to use PDA model for watermarking instead of random message model
 
     def __post_init__(self):
         # Set language and sample_num based on dataset_type

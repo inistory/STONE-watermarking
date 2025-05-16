@@ -55,30 +55,59 @@ def main(args: WmBaseArgs):
     model = model.to(args.device)
     lm_tokenizer = tokenizer
 
+    tokenizer.model_max_length = args.prompt_length
+
     model_path = os.path.join(os.path.dirname(__file__), "utils", f"lstm_model_{args.language}.pth")
+    
+    try:
+        state_dict = torch.load(model_path, weights_only=True, map_location=args.device)
+        
+        if 'embedding.weight' not in state_dict:
+            weight_mapping = {
+                'lstm.weight_ih_l0': 'lstm.weight_ih_l0',
+                'lstm.weight_hh_l0': 'lstm.weight_hh_l0',
+                'lstm.bias_ih_l0': 'lstm.bias_ih_l0',
+                'lstm.bias_hh_l0': 'lstm.bias_hh_l0',
+                'fc.weight': 'fc.weight',
+                'fc.bias': 'fc.bias'
+            }
+            
+            for key in state_dict.keys():
+                if 'embed' in key.lower():
+                    weight_mapping[key] = 'embedding.weight'
+                    vocab_size = state_dict[key].shape[0]
+                    break
+            else:
+                print("Warning: Could not find embedding weights, using default vocabulary size")
+                vocab_size = tokenizer.vocab_size
+        
+        else:
+            vocab_size = state_dict['embedding.weight'].shape[0]
+            weight_mapping = None
 
-    class LSTMModel(nn.Module):
-        def __init__(self, vocab_size, embed_size, hidden_size, output_size):
-            super(LSTMModel, self).__init__()
-            self.embedding = nn.Embedding(vocab_size, embed_size)
-            self.lstm = nn.LSTM(embed_size, hidden_size, batch_first=True)
-            self.fc = nn.Linear(hidden_size, output_size)
+        embed_size = 64
+        hidden_size = 128
+        output_size = vocab_size
 
-        def forward(self, x):
-            embedded = self.embedding(x)
-            _, (hn, cn) = self.lstm(embedded)
-            output = self.fc(hn[-1, :, :])
-            return output
-
-    state_dict = torch.load(model_path)  
-    vocab_size = state_dict['embedding.weight'].shape[0]
-    embed_size = 64
-    hidden_size = 128
-    output_size = vocab_size
-
-    lstm_model = LSTMModel(vocab_size, embed_size, hidden_size, output_size)
-    lstm_model.load_state_dict(state_dict)
-    lstm_model.to(args.device)
+        lstm_model = LSTMModel(vocab_size, embed_size, hidden_size, output_size)
+        
+        if weight_mapping:
+            new_state_dict = {}
+            for old_key, new_key in weight_mapping.items():
+                if old_key in state_dict:
+                    new_state_dict[new_key] = state_dict[old_key]
+            lstm_model.load_state_dict(new_state_dict, strict=False)
+        else:
+            lstm_model.load_state_dict(state_dict)
+            
+        lstm_model.to(args.device)
+        print(f"Successfully loaded LSTM model with vocabulary size: {vocab_size}")
+        
+    except Exception as e:
+        print(f"Error loading LSTM model: {str(e)}")
+        print("Falling back to random message model only")
+        args.use_pda = False  
+        lstm_model = None
 
     dataset = get_dataset(args.dataset_type, args.language)
     dataset = list(dataset.values())[:args.sample_num]
@@ -86,38 +115,45 @@ def main(args: WmBaseArgs):
     texts = [d['prompt'] for d in dataset]
     canonical_solutions = [d['canonical_solution'] for d in dataset]  
 
-    lm_message_model = RandomMessageModel(tokenizer=tokenizer,
-                                          lm_tokenizer=lm_tokenizer,
-                                          delta=args.delta,
-                                          message_code_len=args.message_code_len,
-                                          device=model.device)
+    lm_message_model = RandomMessageModel(
+        tokenizer=tokenizer,
+        lm_tokenizer=lm_tokenizer,
+        delta=args.delta,
+        message_code_len=args.message_code_len,
+        device=model.device
+    )
 
-    watermark_processor = WmProcessorRandomMessageModel(message_model=lm_message_model,
-                                                        tokenizer=tokenizer,
-                                                        encode_ratio=args.encode_ratio,
-                                                        message=args.message,
-                                                        top_k=args.top_k)
+    if args.use_pda and lstm_model is not None:
+        pda_model = PDAMessageModel(
+            tokenizer=tokenizer, 
+            pda_model=lstm_model, 
+            delta=args.delta
+        )
+        pda_model.lexer = PythonLexer()
+        watermark_processor = PDAProcessorMessageModel(
+            message_model=pda_model,
+            tokenizer=tokenizer,
+            gamma=args.gamma,
+            beta=args.beta
+        )
+    else:
+        watermark_processor = WmProcessorRandomMessageModel(
+            message_model=lm_message_model,
+            tokenizer=tokenizer,
+            encode_ratio=args.encode_ratio,
+            message=args.message,
+            top_k=args.top_k
+        )
 
     eos_id = torch.tensor(tokenizer.eos_token_id).to(model.device)
-    min_length_processor = MinLengthLogitsProcessor(min_length=10000, eos_token_id=eos_id)
-
-    rep_processor = RepetitionPenaltyLogitsProcessor(penalty=args.repeat_penalty)
-    ngram_processor = NoRepeatNGramLogitsProcessor(ngram_size=args.ngram_size)
-
-    pda_model = PDAMessageModel(tokenizer=tokenizer, pda_model=lstm_model, delta=args.delta)
-    pda_model.lexer = PythonLexer()
-
-    pda_processor = PDAProcessorMessageModel(message_model=pda_model,
-                                             tokenizer=tokenizer,
-                                             gamma=args.gamma,
-                                             beta=args.beta)
-
+    
     logit_processor = LogitsProcessorList([
-        min_length_processor,
-        rep_processor,
-        ngram_processor,
-        watermark_processor,
-        pda_processor
+        MinLengthLogitsProcessor(
+            min_length=min(1000, args.generated_length),
+            eos_token_id=eos_id
+        ),
+        NoRepeatNGramLogitsProcessor(ngram_size=args.ngram_size),
+        watermark_processor 
     ])
 
     results = {
@@ -126,57 +162,82 @@ def main(args: WmBaseArgs):
         'output_text': [],
         'decoded_message': [],
         'acc': [],
-        'canonical_solution': []  
+        'canonical_solution': [],
+        'task_id': []
     }
 
     try:
-        for text, canonical_solution in tqdm(zip(texts, canonical_solutions)):
-            tokenized_input = tokenizer(text, return_tensors='pt')
-            tokenized_input = truncate(tokenized_input, max_length=args.prompt_length)
-            tokenized_input = tokenized_input.to(model.device)
+        for text, canonical_solution, task_id in tqdm(zip(texts, canonical_solutions, [d['task_id'] for d in dataset])):
+            for _ in range(args.n_samples):
+                tokenized_input = tokenizer(
+                    text, 
+                    return_tensors='pt',
+                    truncation=True,
+                    max_length=args.prompt_length
+                ).to(model.device)
 
-            watermark_processor.start_length = tokenized_input['input_ids'].shape[-1]
+                watermark_processor.start_length = tokenized_input['input_ids'].shape[-1]
 
-            output_tokens = model.generate(
-                **tokenized_input,
-                temperature=args.temperature,
-                max_new_tokens=args.generated_length,
-                num_beams=args.num_beams,
-                repetition_penalty=None,
-                logits_processor=logit_processor
-            )
+                output_tokens = model.generate(
+                    **tokenized_input,
+                    temperature=args.temperature,
+                    max_new_tokens=args.generated_length,
+                    num_beams=1,
+                    do_sample=True,
+                    top_p=0.95,
+                    repetition_penalty=args.repeat_penalty,
+                    logits_processor=logit_processor
+                )
 
-            output_text = tokenizer.batch_decode(
-                output_tokens[:, tokenized_input["input_ids"].shape[-1]:],
-                skip_special_tokens=True
-            )[0]
+                output_text = tokenizer.batch_decode(
+                    output_tokens[:, tokenized_input["input_ids"].shape[-1]:],
+                    skip_special_tokens=True
+                )[0]
 
-            prefix_and_output_text = tokenizer.batch_decode(output_tokens, skip_special_tokens=True)[0]
+                prefix_and_output_text = tokenizer.batch_decode(
+                    output_tokens, 
+                    skip_special_tokens=True
+                )[0]
 
-            results['text'].append(text)
-            results['output_text'].append(output_text)
-            results['prefix_and_output_text'].append(prefix_and_output_text)
-            results['canonical_solution'].append(canonical_solution)  # 정답 코드 저장
+                decoded_message = watermark_processor.decode(output_text, disable_tqdm=True)[0]
+                message_ratio = args.message_code_len * args.encode_ratio
+                available_message_num = int(args.generated_length / message_ratio)  # 정수 나눗셈 대신 float 사용
+                acc = decoded_message[:available_message_num] == args.message[:available_message_num]
 
-            decoded_message = watermark_processor.decode(output_text, disable_tqdm=True)[0]
-            available_message_num = args.generated_length // (int(args.message_code_len * args.encode_ratio))
-            acc = decoded_message[:available_message_num] == args.message[:available_message_num]
+                results['text'].append(text)
+                results['output_text'].append(output_text)
+                results['prefix_and_output_text'].append(prefix_and_output_text)
+                results['canonical_solution'].append(canonical_solution)
+                results['task_id'].append(task_id)
+                results['decoded_message'].append(decoded_message)
+                results['acc'].append(acc)
 
-            results['decoded_message'].append(decoded_message)
-            results['acc'].append(acc)
+                print(f"Task ID: {task_id}")
+                print(f"Generated Code:\n{output_text}")
+                print(f"Decoded Message: {decoded_message}")
+                print(f"Accuracy: {acc}\n")
 
-            print(prefix_and_output_text)
-            print(decoded_message, acc)
-
-            torch.cuda.empty_cache()
+                torch.cuda.empty_cache()
 
     except KeyboardInterrupt:
         pass
 
     args_dict = vars(args)
     results['args'] = args_dict
-    results['task_id'] = [d['task_id'] for d in dataset]
     results['extraction_rate'] = sum(results['acc']) / len(results['acc']) if results['acc'] else 0
 
     with open(args.save_path, 'w') as f:
         json.dump(results, f, indent=4)
+
+class LSTMModel(nn.Module):
+    def __init__(self, vocab_size, embed_size, hidden_size, output_size):
+        super(LSTMModel, self).__init__()
+        self.embedding = nn.Embedding(vocab_size, embed_size)
+        self.lstm = nn.LSTM(embed_size, hidden_size, batch_first=True)
+        self.fc = nn.Linear(hidden_size, output_size)
+
+    def forward(self, x):
+        embedded = self.embedding(x)
+        output, _ = self.lstm(embedded)  
+        output = self.fc(output[:, -1, :]) 
+        return output
