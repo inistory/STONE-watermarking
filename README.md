@@ -126,32 +126,25 @@ bash run_wm.sh
 
 ### Evaluating
 
-#### 1. Calculating correctness score
+### 1. Calculating correctness score
 
-1-1. For other baseline and STONE
-
-1-1-1. Evaluate HumanEval+ and MBPP+
+1-1. Evaluate HumanEval+ and MBPP+
 ```bash
 cd stone_implementation/custom_evalplus/evalplus
 bash pass_evaluation.sh
 ```
-1-1-2. Evaluate HumanEvalPack
-```bash
-tar -cvf bigcode-evaluation-harness.tar.gz bigcode-evaluation-harness
-tar -cvf results.tar.gz ./stone_implementation/results
-```
-Upload bigcode-evaluation-harness.tar.gz and results.tar.gz to Google Drive and run on colab notebook.
 
-#### 1-1-2. Evaluating HumanEvalPack
 
-#### 1) Prepare Result Files
+1-2. Evaluating HumanEvalPack
+
+> 1) Prepare Result Files
 ```bash
 # Compress files needed for evaluation
 tar -cvf bigcode-evaluation-harness.tar.gz bigcode-evaluation-harness
 tar -cvf results.tar.gz ./stone_implementation/results
 ```
 
-#### 2) Google Colab Setup
+> 2) Google Colab Setup
 1. Upload the compressed files to Google Drive
 2. Run the following code in a Colab notebook:
 
@@ -171,7 +164,7 @@ drive.mount('/content/drive')
 !pip install datasets evaluate
 ```
 
-#### 3) Run Evaluation
+> 3) Run Evaluation
 ```python
 # Evaluation settings
 language = 'cpp'      # Programming language to evaluate
@@ -193,13 +186,14 @@ input_file_path = f"/content/drive/MyDrive/results/5samples/humanevalpack_{langu
     --load_generations_path {input_file_path}
 ```
 
-1-2. For CodeIP
+1-3. For CodeIP
 ```bash
 cd stone_implementation/CodeIP/examples/src/output
 python convert.py
 bash pass_evaluation.sh
 ```
-#### 2. Getting detectability and imperceptibility scores
+
+### 2. Getting detectability and imperceptibility scores
 
 2-1. For other baseline and STONE
 ```bash
@@ -217,7 +211,7 @@ cd stone_implementation/CodeIP/examples/src/output
 python perplexity.py
 ```
 
-#### 3. Calculating CWEM (Code Watermarking Evaluation Metric)
+### 3. Calculating CWEM (Code Watermarking Evaluation Metric)
 Combine the obtained correctness, detectability, and imperceptibility scores to calculate the CWEM score.
 ```bash
 cd stone_implementation/evaluation
