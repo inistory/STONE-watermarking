@@ -183,11 +183,12 @@ drive.mount('/content/drive')
 # Evaluation settings
 language = 'cpp'      # Programming language to evaluate
 model = 'qwen'        # Model to use
+gamma = 0.5           # Gamma 
+delta = 0.5           # Delta
 method = 'STONE'      # Watermarking method
 hash_key = '15485863' # Hash key
-
 # Set input file path
-input_file_path = f"/content/drive/MyDrive/results/5samples/humanevalpack_{language}_{model}_{method}_{hash_key}__unwatermarked_solutions.json"
+input_file_path = f"/content/drive/MyDrive/results/5samples/humanevalpack_{language}_{model}_{method}_all_pl_False_{gamma}_{delta}_{hash_key}__watermarked_solutions.json"
 
 # Run evaluation
 !python main.py \
