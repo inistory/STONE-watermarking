@@ -229,7 +229,7 @@ cd stone_implementation/CodeIP/examples/src/output
 python perplexity.py
 ```
 
-### 3. Calculating STEM (Code Watermarking Evaluation Metric)
+### 3. Calculating STEM (Summative Test framework for Evaluating code-waterMarking)
 Combine the obtained correctness, detectability, and imperceptibility scores to calculate the STEM score.
 ```bash
 cd stone_implementation/evaluation
