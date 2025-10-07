@@ -1,12 +1,12 @@
 import math
 
-def calculate_CWEM(perplexity_wm, perplexity_H, pass_k, AUROC):
+def calculate_STEM(perplexity_wm, perplexity_H, pass_k, AUROC):
     try: 
         correctness = round((pass_k[0]+pass_k[1])/2,3)
         detectability = round(AUROC,3)
         naturalness = round(1-(abs(perplexity_wm-perplexity_H)) / perplexity_H ,3)
-        CWEM =  round((correctness + detectability + naturalness)/3,3)
-        print("correctness:", correctness, "detectability:", detectability, "naturalness:", naturalness, "CWEM:", CWEM)
+        STEM =  round((correctness + detectability + naturalness)/3,3)
+        print("correctness:", correctness, "detectability:", detectability, "naturalness:", naturalness, "STEM:", STEM)
     
     except ZeroDivisionError:
         print("ZeroDivisionError: perplexity_H or F_no_wm is 0")
@@ -51,7 +51,7 @@ def run_experiment():
                 print("Baseline:", baseline)
                 pass_k = values["pass_k"]
                 AUROC = values["AUROC"]
-                calculate_CWEM(values["perplexity_wm"], values["perplexity_H"], pass_k,AUROC)
+                calculate_STEM(values["perplexity_wm"], values["perplexity_H"], pass_k,AUROC)
             print()
 
 
