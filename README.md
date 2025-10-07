@@ -2,7 +2,7 @@
 <!-- [**📖 Paper**](https://arxiv.org/) -->
 
 ## TL; DR
-We propose STONE, a syntax-aware watermarking method that embeds watermarks only in non-syntax tokens to reliably detect AI-generated code without breaking functionality, and introduces STEM, a comprehensive metric for evaluating code watermark effectiveness.
+We present STONE, a syntax-aware code watermarking method that embeds watermarks only into non-syntax tokens, ensuring reliable detection of AI-generated code while preserving functional correctness. We also introduce STEM, a unified evaluation framework for assessing watermark effectiveness across correctness, detectability, and imperceptibility.
 
 ## About STONE 
 <div style="display: flex; align-items: flex-start; gap: 20px;">
