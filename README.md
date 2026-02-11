@@ -1,5 +1,6 @@
-# Marking Code Without Breaking It: Code Watermarking for Detecting LLM-Generated Code
-<!-- [**📖 Paper**](https://arxiv.org/) -->
+# Marking Code Without Breaking It: Code Watermarking for Detecting LLM-Generated Code (Findings of EACL 2026)
+
+[**📖 Paper**](https://arxiv.org/pdf/2502.18851)
 
 ## TL; DR
 We present STONE, a syntax-aware code watermarking method that embeds watermarks only into non-syntax tokens, ensuring reliable detection of AI-generated code while preserving functional correctness. We also introduce STEM, a unified evaluation metric for assessing watermark effectiveness across correctness, detectability, and imperceptibility.
@@ -68,7 +69,9 @@ Imperceptibility assesses whether the code remains fluent (in terms of Perplexit
 
 The difference in Perplexity between non-watermarked code $C_{H}$ and watermarked code $C_{wm}$ is normalized to measure imperceptibility.
 
-$$PPL(C_{wm}) = \frac{1}{|C_{wm}|} \sum_{j=1}^{|C_{wm}|} \exp \left( -\frac{1}{N_j} \sum_{i=1}^{N_j} \log P(y_i^{(j)} | y_{<i}^{(j)}) \right)$$
+```math
+PPL(C_{wm})=\frac{1}{|C_{wm}|}\sum_{j=1}^{|C_{wm}|} e^{-\frac{1}{N_j}\sum_{i=1}^{N_j}\log P(y_i^{(j)} \mid y_{1:i-1}^{(j)})}
+```
 
 - $N_j$: Number of tokens in the j-th code sample in $C_{wm}$.
 - $P(y_i^{(j)} | y_{<i}^{(j)})$: The probability of token $y_i^{(j)}$ given its preceding context in the j-th sample, where $y_i^{(j)}$ represents the i-th token in the j-th code sample
@@ -234,6 +237,19 @@ Combine the obtained correctness, detectability, and imperceptibility scores to 
 ```bash
 cd stone_implementation/evaluation
 stem.py
+```
+
+## 🖊 Citation
+```text
+@misc{kim2026markingcodebreakingit,
+      title={Marking Code Without Breaking It: Code Watermarking for Detecting LLM-Generated Code}, 
+      author={Jungin Kim and Shinwoo Park and Yo-Sub Han},
+      year={2026},
+      eprint={2502.18851},
+      archivePrefix={arXiv},
+      primaryClass={cs.CR},
+      url={https://arxiv.org/abs/2502.18851}, 
+}
 ```
 
 ## Acknowledgements
